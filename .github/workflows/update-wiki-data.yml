@@ -69,8 +69,6 @@ jobs:
           git push
 
   deploy-pages:
-    # Only deploy to GitHub Pages from main branch
-    if: github.ref == 'refs/heads/main'
     needs: update-wiki-data
     runs-on: ubuntu-latest
     environment:
