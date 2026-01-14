@@ -34,8 +34,19 @@ jobs:
           npm install axios cheerio
 
       - name: Fetch Wikipedia article
+        id: scrape
+        continue-on-error: true
         run: |
           node scripts/scrape-wiki.js
+
+      - name: Check scraper status
+        run: |
+          if [ "${{ steps.scrape.outcome }}" == "failure" ]; then
+            echo "⚠️ Wikipedia scraper failed, but continuing with existing data"
+            echo "This is expected if there are network issues. The existing wiki-data.json will be used."
+          else
+            echo "✓ Wikipedia scraper succeeded"
+          fi
 
       - name: Check for changes
         id: check_changes
@@ -58,12 +69,17 @@ jobs:
           git push
 
   deploy-pages:
+    # Only deploy to GitHub Pages from main branch
+    if: github.ref == 'refs/heads/main'
     needs: update-wiki-data
-    if: always()
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

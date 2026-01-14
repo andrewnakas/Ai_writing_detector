@@ -18,6 +18,11 @@ async function fetchWikipediaArticle() {
                 format: 'json',
                 prop: 'text|sections|revid',
                 disableeditsection: true
+            },
+            timeout: 30000,
+            maxRedirects: 5,
+            headers: {
+                'User-Agent': 'AI-Writing-Detector/1.0 (https://github.com/andrewnakas/Ai_writing_detector)'
             }
         });
 
