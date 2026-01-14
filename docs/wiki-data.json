@@ -1,0 +1,586 @@
+{
+  "metadata": {
+    "title": "Wikipedia:Signs of AI writing",
+    "revisionId": "initial",
+    "lastUpdated": "2026-01-14T00:00:00.000Z",
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing"
+  },
+  "categories": [
+    {
+      "name": "Language and Tone",
+      "description": "AI-generated text often exhibits distinctive language patterns and tonal characteristics that differ from typical human writing.",
+      "signs": ["sign-1", "sign-2", "sign-3", "sign-4", "sign-5", "sign-6"]
+    },
+    {
+      "name": "Structural Patterns",
+      "description": "Certain structural patterns appear more frequently in AI-generated content due to training data biases.",
+      "signs": ["sign-7", "sign-8", "sign-9", "sign-10"]
+    },
+    {
+      "name": "Content Issues",
+      "description": "AI writing often contains specific content problems related to accuracy, attribution, and neutrality.",
+      "signs": ["sign-11", "sign-12", "sign-13", "sign-14"]
+    },
+    {
+      "name": "Formatting and Technical Clues",
+      "description": "Technical artifacts and formatting issues that reveal AI generation.",
+      "signs": ["sign-15", "sign-16", "sign-17", "sign-18"]
+    }
+  ],
+  "signs": [
+    {
+      "id": "sign-1",
+      "name": "Grandiose Language and Inflated Symbolism",
+      "category": "Language and Tone",
+      "description": "AI often exaggerates a topic's importance through predictable, inflated phrases that overstate significance. This includes treating mundane subjects with unwarranted gravitas.",
+      "examples": [
+        "serves as a testament to",
+        "plays a vital role",
+        "stands as a testament",
+        "leaves a lasting impact",
+        "underscores its importance",
+        "stands as a powerful reminder",
+        "serves as a poignant reminder"
+      ],
+      "patterns": [
+        "Phrases that dramatically overstate importance",
+        "Using 'testament' language for ordinary topics",
+        "Claiming 'vital roles' without justification",
+        "Inserting unnecessary significance markers"
+      ],
+      "severity": "high",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-2",
+      "name": "Promotional Language About Cultures and Places",
+      "category": "Language and Tone",
+      "description": "Using admiration-laden, marketing-style descriptions that resemble travel brochures rather than encyclopedic writing. This violates Wikipedia's neutral point of view policy.",
+      "examples": [
+        "rich cultural heritage",
+        "breathtaking landscapes",
+        "stunning natural beauty",
+        "vibrant traditions",
+        "picturesque scenery",
+        "warm hospitality",
+        "diverse tapestry"
+      ],
+      "patterns": [
+        "Travel marketing language",
+        "Subjective positive adjectives",
+        "Promotional tone about locations",
+        "Emotional appeals rather than facts"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-3",
+      "name": "Editorial Commentary and Unnecessary Interpretation",
+      "category": "Language and Tone",
+      "description": "Adding personal interpretation or meta-commentary that introduces opinions rather than presenting facts neutrally. This violates Wikipedia's no original research policy.",
+      "examples": [
+        "it's important to note",
+        "it is worth noting",
+        "it should be noted",
+        "interestingly",
+        "notably",
+        "significantly",
+        "no discussion would be complete without",
+        "it bears mentioning"
+      ],
+      "patterns": [
+        "Meta-commentary about the text itself",
+        "Directing reader attention editorially",
+        "Adding subjective importance markers",
+        "Using 'worth noting' constructions"
+      ],
+      "severity": "medium",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-4",
+      "name": "Overuse of Conjunctive Phrases",
+      "category": "Language and Tone",
+      "description": "Heavy reliance on transition words that suggest synthesis or formal essay structure, inappropriate for encyclopedia entries. AI tends to over-structure text with these connectors.",
+      "examples": [
+        "moreover",
+        "furthermore",
+        "however",
+        "in contrast",
+        "on the other hand",
+        "nevertheless",
+        "additionally",
+        "consequently",
+        "in addition to"
+      ],
+      "patterns": [
+        "Excessive use of formal transitions",
+        "Over-structured paragraph connections",
+        "Synthesis language in factual content",
+        "Multiple conjunctive phrases per paragraph"
+      ],
+      "severity": "medium",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-5",
+      "name": "Excessive Use of Em Dashes",
+      "category": "Language and Tone",
+      "description": "Using em dashes more frequently than human writers typically do, especially in a formulaic way that mimics 'punched up' sales writing. Often used where parentheses or commas would be more natural.",
+      "examples": [
+        "—a testament to its enduring appeal—",
+        "—from ancient times to modern day—",
+        "—including architecture, art, and music—",
+        "—making it a popular destination—"
+      ],
+      "patterns": [
+        "Multiple em dashes per paragraph",
+        "Em dashes used for emphasis rather than clarity",
+        "Formulaic em dash constructions",
+        "Em dashes in sales-like constructions"
+      ],
+      "severity": "medium",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-6",
+      "name": "Superficial Analysis with -ing Words",
+      "category": "Language and Tone",
+      "description": "Appending unnecessary present participles (ensuring, highlighting, emphasizing) that add editorial opinion rather than substance. These words suggest emphasis without providing actual content.",
+      "examples": [
+        "ensuring that visitors can explore",
+        "highlighting the importance of",
+        "emphasizing the need for",
+        "demonstrating the value of",
+        "showcasing the diversity of",
+        "reflecting the complexity of"
+      ],
+      "patterns": [
+        "Present participles used for artificial emphasis",
+        "Words suggesting analysis without providing it",
+        "Vague 'highlighting' and 'emphasizing' constructions",
+        "Surface-level commentary masquerading as insight"
+      ],
+      "severity": "medium",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-7",
+      "name": "Rule of Three / Triadic Patterns",
+      "category": "Structural Patterns",
+      "description": "AI overuses triadic patterns (listing three things) due to this being a common rhetorical device in training data. Human writers naturally vary between two, three, four, or more examples.",
+      "examples": [
+        "convenient, efficient, and innovative",
+        "the good, the bad, and the ugly",
+        "experts, professionals, and enthusiasts",
+        "keynote sessions, panel discussions, and networking opportunities"
+      ],
+      "patterns": [
+        "Consistent use of three-item lists",
+        "Triple adjective combinations",
+        "Three parallel structures repeatedly",
+        "Avoiding variation in list length"
+      ],
+      "severity": "low",
+      "detectability": "low"
+    },
+    {
+      "id": "sign-8",
+      "name": "Negative Parallelism / 'Not X, But Y' Structure",
+      "category": "Structural Patterns",
+      "description": "Using 'It's not X, it's Y' structures to create dramatic contrast. This is among the most prominent AI tells and often appears repeatedly in AI-generated text.",
+      "examples": [
+        "It's not just about X, it's about Y",
+        "Not merely X, but Y",
+        "Not simply X, but rather Y",
+        "It's not so much X as it is Y"
+      ],
+      "patterns": [
+        "Repeated 'not X but Y' constructions",
+        "Artificial dramatic contrast",
+        "Multiple instances in single text",
+        "Used to add false depth"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-9",
+      "name": "Bolded Bullet Points with Restatement",
+      "category": "Structural Patterns",
+      "description": "Creating bullet lists with bolded titles followed by sentences that merely restate the title. This is a distinctive ChatGPT formatting pattern absent from typical Wikipedia articles.",
+      "examples": [
+        "**Innovation**: The company is known for its innovation.",
+        "**Sustainability**: Sustainability is a core value.",
+        "**Excellence**: They strive for excellence in all areas."
+      ],
+      "patterns": [
+        "Bolded list item titles",
+        "Sentence restating the bolded word",
+        "Redundant structure throughout",
+        "ChatGPT-style formatting"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-10",
+      "name": "Excessive Boldface",
+      "category": "Structural Patterns",
+      "description": "Using bold formatting predictably and unnecessarily outside of proper use cases like defining terms or indicating importance in a structured way.",
+      "examples": [
+        "Multiple **bolded** words in **regular** paragraphs",
+        "**Emphasis** on ordinary **words**",
+        "**Important**: overuse of importance markers"
+      ],
+      "patterns": [
+        "Bold formatting in regular prose",
+        "Multiple bold words per paragraph",
+        "Bold used for emphasis rather than structure",
+        "Inconsistent boldface application"
+      ],
+      "severity": "low",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-11",
+      "name": "Vague Attribution and Weasel Wording",
+      "category": "Content Issues",
+      "description": "Using imprecise sources or vague attribution like 'industry reports' or 'observers have cited' without clear, verifiable sources. This violates Wikipedia's citation standards.",
+      "examples": [
+        "industry reports suggest",
+        "experts say",
+        "studies have shown",
+        "observers have noted",
+        "it is widely believed",
+        "many consider",
+        "some argue that"
+      ],
+      "patterns": [
+        "Vague collective sources",
+        "Unattributed claims",
+        "Weasel words avoiding specificity",
+        "Claims without concrete citations"
+      ],
+      "severity": "high",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-12",
+      "name": "Hallucinated or Fabricated Citations",
+      "category": "Content Issues",
+      "description": "Made-up or incorrect citations, including broken links, fake DOIs, ISBNs with invalid checksums, or references that don't exist when checked.",
+      "examples": [
+        "DOI: 10.1234/fake.citation.2024",
+        "ISBN: 978-0-123456-78-9 (with invalid checksum)",
+        "Retrieved from non-existent URLs",
+        "Journal citations that don't exist"
+      ],
+      "patterns": [
+        "Citations that return 404 errors",
+        "Invalid ISBN checksums",
+        "Fake DOI patterns",
+        "Non-existent journal issues",
+        "Plausible-looking but fabricated references"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-13",
+      "name": "Contextless Superlatives",
+      "category": "Content Issues",
+      "description": "Using superlatives without proper context, verification, or citations. Claims like 'the best', 'the most', 'the largest' require specific evidence.",
+      "examples": [
+        "one of the most important",
+        "the best known",
+        "the largest collection",
+        "the most influential",
+        "among the greatest"
+      ],
+      "patterns": [
+        "Superlatives without citations",
+        "Unverified 'most' and 'best' claims",
+        "Vague comparative statements",
+        "Peacock terms without evidence"
+      ],
+      "severity": "medium",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-14",
+      "name": "Generic Filler Content",
+      "category": "Content Issues",
+      "description": "Padding text with obvious, self-evident statements that add no informational value. Often used to reach length requirements.",
+      "examples": [
+        "throughout history, humans have",
+        "in today's modern world",
+        "as we can see",
+        "it is clear that",
+        "obviously"
+      ],
+      "patterns": [
+        "Stating obvious facts as insights",
+        "Padding sentences with no new information",
+        "Generic transitional filler",
+        "Redundant obviousness statements"
+      ],
+      "severity": "low",
+      "detectability": "medium"
+    },
+    {
+      "id": "sign-15",
+      "name": "Title Case in Headings",
+      "category": "Formatting and Technical Clues",
+      "description": "Using Title Case For All Headings when Wikipedia style calls for sentence case. This reveals unfamiliarity with Wikipedia formatting standards.",
+      "examples": [
+        "The History Of The Modern Era",
+        "Key Developments In Technology",
+        "Cultural Impact And Legacy"
+      ],
+      "patterns": [
+        "Every word capitalized in headings",
+        "Not following Wikipedia sentence case style",
+        "Title case where sentence case expected"
+      ],
+      "severity": "medium",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-16",
+      "name": "Markdown Formatting Artifacts",
+      "category": "Formatting and Technical Clues",
+      "description": "Leaving Markdown formatting syntax visible in the article instead of properly formatted Wikipedia markup.",
+      "examples": [
+        "**bold text** instead of proper bold",
+        "### Heading instead of proper wiki heading",
+        "[link](url) instead of wiki link format",
+        "* bullet instead of wiki list format"
+      ],
+      "patterns": [
+        "Visible markdown syntax",
+        "Asterisks for bold/italic",
+        "Hash symbols for headings",
+        "Square bracket link format"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-17",
+      "name": "Placeholder Text",
+      "category": "Formatting and Technical Clues",
+      "description": "Including placeholder codes, template markers, or draft indicators that should have been removed before submission.",
+      "examples": [
+        "[citation needed]",
+        "[insert date]",
+        "[TODO: add reference]",
+        "[expand this section]",
+        "Lorem ipsum",
+        "TK",
+        "XXX"
+      ],
+      "patterns": [
+        "Bracket placeholders left in text",
+        "TODO markers",
+        "Template instructions visible",
+        "Incomplete sections marked but not filled"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    },
+    {
+      "id": "sign-18",
+      "name": "Chatbot Disclaimers and Meta-text",
+      "category": "Formatting and Technical Clues",
+      "description": "Including chatbot-specific phrases, disclaimers, or meta-commentary about the AI's limitations or generation process.",
+      "examples": [
+        "As an AI language model",
+        "I apologize, but I cannot",
+        "I don't have access to real-time information",
+        "As of my last update",
+        "Please verify this information",
+        "I should note that",
+        "based on my training data"
+      ],
+      "patterns": [
+        "Self-referential AI statements",
+        "Disclaimers about AI limitations",
+        "Apologies or caveats from the AI",
+        "References to 'my training' or 'my knowledge'"
+      ],
+      "severity": "high",
+      "detectability": "high"
+    }
+  ],
+  "detectionRules": [
+    {
+      "signId": "sign-1",
+      "patterns": [
+        "serves as a testament to",
+        "plays a vital role",
+        "stands as a testament",
+        "leaves a lasting impact",
+        "underscores its importance"
+      ],
+      "keywords": ["testament", "vital", "underscores", "lasting", "impact"],
+      "weight": 3
+    },
+    {
+      "signId": "sign-2",
+      "patterns": [
+        "rich cultural heritage",
+        "breathtaking landscapes",
+        "stunning natural beauty",
+        "vibrant traditions",
+        "picturesque scenery"
+      ],
+      "keywords": ["breathtaking", "stunning", "vibrant", "picturesque", "heritage"],
+      "weight": 3
+    },
+    {
+      "signId": "sign-3",
+      "patterns": [
+        "it's important to note",
+        "it is worth noting",
+        "it should be noted",
+        "no discussion would be complete without"
+      ],
+      "keywords": ["important", "worth", "noting", "interestingly", "notably"],
+      "weight": 2
+    },
+    {
+      "signId": "sign-4",
+      "patterns": ["moreover", "furthermore", "on the other hand", "nevertheless"],
+      "keywords": ["moreover", "furthermore", "nevertheless", "consequently", "additionally"],
+      "weight": 2
+    },
+    {
+      "signId": "sign-5",
+      "patterns": ["—[^—]+—"],
+      "keywords": [],
+      "weight": 2
+    },
+    {
+      "signId": "sign-6",
+      "patterns": [
+        "ensuring that",
+        "highlighting the",
+        "emphasizing the",
+        "demonstrating the",
+        "showcasing the"
+      ],
+      "keywords": ["ensuring", "highlighting", "emphasizing", "demonstrating", "showcasing"],
+      "weight": 2
+    },
+    {
+      "signId": "sign-7",
+      "patterns": ["\\w+,\\s+\\w+,\\s+and\\s+\\w+"],
+      "keywords": [],
+      "weight": 1
+    },
+    {
+      "signId": "sign-8",
+      "patterns": [
+        "[Ii]t's not just",
+        "[Nn]ot merely",
+        "[Nn]ot simply",
+        "[Nn]ot so much"
+      ],
+      "keywords": [],
+      "weight": 3
+    },
+    {
+      "signId": "sign-9",
+      "patterns": ["\\*\\*[A-Z][a-z]+\\*\\*:"],
+      "keywords": [],
+      "weight": 3
+    },
+    {
+      "signId": "sign-10",
+      "patterns": ["\\*\\*\\w+\\*\\*"],
+      "keywords": [],
+      "weight": 1
+    },
+    {
+      "signId": "sign-11",
+      "patterns": [
+        "industry reports suggest",
+        "experts say",
+        "studies have shown",
+        "observers have noted"
+      ],
+      "keywords": ["reports", "experts", "observers", "widely", "believed"],
+      "weight": 3
+    },
+    {
+      "signId": "sign-12",
+      "patterns": ["DOI:\\s*10\\.\\d+", "ISBN[:\\s]+[\\d-]+", "\\[\\d+\\]"],
+      "keywords": [],
+      "weight": 3
+    },
+    {
+      "signId": "sign-13",
+      "patterns": [
+        "one of the most",
+        "the best known",
+        "the largest",
+        "the most influential"
+      ],
+      "keywords": ["most", "best", "largest", "greatest", "influential"],
+      "weight": 2
+    },
+    {
+      "signId": "sign-14",
+      "patterns": [
+        "throughout history",
+        "in today's modern world",
+        "as we can see",
+        "it is clear that"
+      ],
+      "keywords": ["obviously", "clearly", "evident"],
+      "weight": 1
+    },
+    {
+      "signId": "sign-15",
+      "patterns": ["^[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)+$"],
+      "keywords": [],
+      "weight": 2
+    },
+    {
+      "signId": "sign-16",
+      "patterns": ["\\*\\*\\w+\\*\\*", "###\\s+", "\\[.+\\]\\(.+\\)", "^\\*\\s+"],
+      "keywords": [],
+      "weight": 3
+    },
+    {
+      "signId": "sign-17",
+      "patterns": [
+        "\\[citation needed\\]",
+        "\\[insert",
+        "\\[TODO",
+        "\\[expand",
+        "Lorem ipsum"
+      ],
+      "keywords": [],
+      "weight": 3
+    },
+    {
+      "signId": "sign-18",
+      "patterns": [
+        "[Aa]s an AI",
+        "I apologize, but",
+        "I don't have access",
+        "[Aa]s of my last update"
+      ],
+      "keywords": ["language", "model", "training", "data"],
+      "weight": 3
+    }
+  ],
+  "statistics": {
+    "totalSigns": 18,
+    "totalCategories": 4,
+    "lastScraped": "2026-01-14T00:00:00.000Z"
+  }
+}

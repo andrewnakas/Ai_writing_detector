@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Detect AI-generated writing based on Wikipedia's comprehensive guide to Signs of AI Writing. Analyze text for patterns, language indicators, and formatting clues that suggest AI generation.">
+    <meta name="keywords" content="AI writing detector, AI content detection, ChatGPT detector, Wikipedia AI signs">
+    <title>AI Writing Detector - Based on Wikipedia's Signs of AI Writing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 AI Writing Detector</h1>
+            <p class="subtitle">
+                Analyze text against <a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" rel="noopener">Wikipedia's Signs of AI Writing</a>
+            </p>
+            <p class="update-info">
+                <span id="lastUpdate">Loading...</span> |
+                <span id="signCount">Loading...</span> detection patterns
+            </p>
+        </header>
+
+        <main>
+            <div class="input-section card">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="text">📝 Paste Text</button>
+                    <button class="tab-button" data-tab="url">🔗 Enter URL</button>
+                </div>
+
+                <div id="textTab" class="tab-content active">
+                    <textarea
+                        id="textInput"
+                        placeholder="Paste your text here to analyze it for signs of AI writing...&#10;&#10;The detector will evaluate your text against 18+ indicators documented by Wikipedia editors, including:&#10;• Grandiose language and inflated symbolism&#10;• Promotional phrasing&#10;• Overuse of conjunctions and em dashes&#10;• Structural patterns like 'not X, but Y'&#10;• Citation and attribution issues&#10;• Formatting artifacts&#10;&#10;And more..."
+                        rows="12"
+                    ></textarea>
+                    <div class="input-meta">
+                        <span id="charCount">0 characters, 0 words</span>
+                    </div>
+                </div>
+
+                <div id="urlTab" class="tab-content">
+                    <div class="url-input-group">
+                        <input
+                            type="url"
+                            id="urlInput"
+                            placeholder="https://example.com/article"
+                            disabled
+                        >
+                        <button id="fetchUrlBtn" class="button button-secondary" disabled>Fetch Content</button>
+                    </div>
+                    <p class="info-message">
+                        ⚠️ <strong>URL fetching is currently disabled</strong> due to browser security restrictions (CORS).
+                        <br><br>
+                        <strong>Workaround:</strong> Visit the page, copy the text, and paste it in the "Paste Text" tab above.
+                        <br><br>
+                        <em>For developers: A backend proxy service would be needed to enable this feature.</em>
+                    </p>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="analyzeBtn" class="button button-primary">
+                        🔍 Analyze Text
+                    </button>
+                    <button id="clearBtn" class="button button-secondary">
+                        🗑️ Clear
+                    </button>
+                    <button id="sampleBtn" class="button button-secondary">
+                        📄 Load Sample
+                    </button>
+                </div>
+            </div>
+
+            <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing text...</p>
+            </div>
+
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="card">
+                    <h2>📊 Analysis Results</h2>
+
+                    <div class="score-overview">
+                        <div class="score-display">
+                            <div id="scoreCircle" class="score-circle">
+                                <div class="score-value" id="scoreValue">0</div>
+                                <div class="score-label">AI Likelihood</div>
+                            </div>
+                            <div class="score-details">
+                                <p id="scoreSummary" class="score-summary"></p>
+                                <div class="meta-info">
+                                    <span id="confidenceLevel"></span>
+                                    <span id="detectionCount"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category-scores">
+                        <h3>Category Breakdown</h3>
+                        <div id="categoryScoresContainer"></div>
+                    </div>
+
+                    <div class="detected-signs">
+                        <h3>
+                            Detected Signs
+                            <button id="toggleAllSigns" class="toggle-button">Expand All</button>
+                        </h3>
+                        <div id="detectedSignsContainer"></div>
+                        <p id="noSignsMessage" style="display: none;" class="no-signs">
+                            ✅ No significant AI writing patterns detected.
+                        </p>
+                    </div>
+
+                    <div class="highlighted-text-section">
+                        <h3>
+                            Highlighted Text
+                            <span class="legend-toggle" onclick="toggleLegend()">
+                                <span id="legendToggleIcon">▼</span> Legend
+                            </span>
+                        </h3>
+                        <div id="highlightLegend" class="highlight-legend">
+                            <span class="legend-item">
+                                <mark class="highlight-high"></mark> High Severity
+                            </span>
+                            <span class="legend-item">
+                                <mark class="highlight-medium"></mark> Medium Severity
+                            </span>
+                            <span class="legend-item">
+                                <mark class="highlight-low"></mark> Low Severity
+                            </span>
+                        </div>
+                        <div id="highlightedTextContainer" class="highlighted-text"></div>
+                    </div>
+
+                    <div class="export-section">
+                        <h3>Export Results</h3>
+                        <div class="export-buttons">
+                            <button id="exportJsonBtn" class="button button-secondary">📥 Export as JSON</button>
+                            <button id="exportTextBtn" class="button button-secondary">📄 Export as Text</button>
+                            <button id="copyReportBtn" class="button button-secondary">📋 Copy Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section card">
+                <h2>ℹ️ About This Detector</h2>
+                <p>
+                    This tool analyzes text for patterns commonly found in AI-generated content, based on
+                    <strong>Wikipedia's comprehensive guide: <a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" rel="noopener">Signs of AI Writing</a></strong>.
+                </p>
+                <p>
+                    Wikipedia editors have identified these patterns through analyzing thousands of instances of AI-generated text.
+                    The detector evaluates your text across multiple categories:
+                </p>
+                <ul>
+                    <li><strong>Language and Tone:</strong> Grandiose language, promotional phrasing, editorial commentary</li>
+                    <li><strong>Structural Patterns:</strong> Rule of three, negative parallelism, excessive formatting</li>
+                    <li><strong>Content Issues:</strong> Vague attribution, hallucinated citations, generic filler</li>
+                    <li><strong>Technical Clues:</strong> Markdown artifacts, placeholders, chatbot disclaimers</li>
+                </ul>
+
+                <div class="disclaimer">
+                    <h3>⚠️ Important Disclaimers</h3>
+                    <ul>
+                        <li><strong>Not 100% Accurate:</strong> This detector identifies patterns commonly found in AI writing, but these patterns can also appear in human writing.</li>
+                        <li><strong>Context Matters:</strong> Some writing styles (e.g., marketing copy) naturally use patterns that AI also uses.</li>
+                        <li><strong>Educational Purpose:</strong> This tool is designed for education and awareness, not for definitive AI detection.</li>
+                        <li><strong>Evolving Patterns:</strong> AI writing patterns change as models improve. This tool tracks Wikipedia's latest documentation.</li>
+                    </ul>
+                </div>
+
+                <h3>📚 How It Works</h3>
+                <ol>
+                    <li><strong>Daily Updates:</strong> GitHub Actions automatically fetches the latest Wikipedia article every day</li>
+                    <li><strong>Pattern Matching:</strong> The detector uses regex patterns and keyword analysis to identify signs</li>
+                    <li><strong>Weighted Scoring:</strong> Each sign is weighted by severity (high/medium/low) and frequency</li>
+                    <li><strong>Category Analysis:</strong> Results are grouped by category for comprehensive insights</li>
+                    <li><strong>Contextual Highlighting:</strong> Matched patterns are highlighted with context and citations</li>
+                </ol>
+
+                <h3>🔗 Resources</h3>
+                <ul>
+                    <li><a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" rel="noopener">Wikipedia: Signs of AI Writing</a></li>
+                    <li><a href="https://github.com/yourusername/Ai_writing_detector" target="_blank" rel="noopener">GitHub Repository</a></li>
+                    <li><a href="https://en.wikipedia.org/wiki/Wikipedia:Project_AI_Cleanup" target="_blank" rel="noopener">Wikipedia: Project AI Cleanup</a></li>
+                </ul>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                Built with data from <a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" rel="noopener">Wikipedia's Signs of AI Writing</a>
+                | <a href="https://github.com/yourusername/Ai_writing_detector" target="_blank" rel="noopener">View on GitHub</a>
+                | Last data update: <span id="footerUpdate">Loading...</span>
+            </p>
+        </footer>
+    </div>
+
+    <script src="detector.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

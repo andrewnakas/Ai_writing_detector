@@ -1,0 +1,31 @@
+{
+  "name": "ai-writing-detector",
+  "version": "1.0.0",
+  "description": "Detect AI-generated writing based on Wikipedia's Signs of AI Writing",
+  "main": "scripts/scrape-wiki.js",
+  "scripts": {
+    "scrape": "node scripts/scrape-wiki.js",
+    "test": "node scripts/scrape-wiki.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/Ai_writing_detector.git"
+  },
+  "keywords": [
+    "ai-detection",
+    "writing-analysis",
+    "wikipedia",
+    "ai-writing",
+    "content-detection",
+    "chatgpt-detection"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
