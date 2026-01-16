@@ -16,50 +16,7 @@ permissions:
   id-token: write
 
 jobs:
-  update-wiki-data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: |
-          npm install axios cheerio
-
-      - name: Skip Wikipedia scraping (using static data)
-        run: |
-          echo "⚠️ Wikipedia scraper disabled - using static detection patterns"
-          echo "The scraper was creating empty data. Static patterns are more reliable."
-
-      - name: Check for changes
-        id: check_changes
-        run: |
-          if git diff --quiet docs/wiki-data.json; then
-            echo "No changes detected"
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changes detected"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit and push if changed
-        if: steps.check_changes.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/wiki-data.json
-          git commit -m "Update Wikipedia AI writing signs data - $(date -u +"%Y-%m-%d")"
-          git push
-
   deploy-pages:
-    needs: update-wiki-data
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -11,20 +11,69 @@ class AIWritingDetector {
         try {
             // Add cache-busting parameter to force reload of data
             const cacheBuster = new Date().getTime();
+            console.log('🔍 DETECTOR INITIALIZATION STARTED');
+            console.log(`⏰ Cache buster: ${cacheBuster}`);
+
             const response = await fetch(`wiki-data.json?v=${cacheBuster}`, {
                 cache: 'no-cache'
             });
-            this.wikiData = await response.json();
-            console.log('✓ Loaded AI writing signs database:', this.wikiData.statistics);
-            console.log(`✓ Found ${this.wikiData.signs.length} signs with ${this.wikiData.detectionRules.length} rules`);
 
-            // Debug: Check if rules have patterns
-            const rulesWithPatterns = this.wikiData.detectionRules.filter(r => r.patterns.length > 0 || r.keywords.length > 0);
-            console.log(`✓ ${rulesWithPatterns.length} rules have detection patterns`);
+            console.log(`📡 Fetch response status: ${response.status}`);
+
+            this.wikiData = await response.json();
+
+            console.log('===== DATA LOADED =====');
+            console.log('📊 Statistics:', JSON.stringify(this.wikiData.statistics, null, 2));
+            console.log(`📝 Total signs: ${this.wikiData.signs.length}`);
+            console.log(`📋 Total categories: ${this.wikiData.categories.length}`);
+            console.log(`🎯 Total detection rules: ${this.wikiData.detectionRules.length}`);
+
+            // Critical diagnostic: Check if rules have patterns
+            const rulesWithPatterns = this.wikiData.detectionRules.filter(r =>
+                r.patterns && r.patterns.length > 0
+            );
+            const rulesWithKeywords = this.wikiData.detectionRules.filter(r =>
+                r.keywords && r.keywords.length > 0
+            );
+
+            console.log(`✨ Rules with patterns: ${rulesWithPatterns.length}`);
+            console.log(`🔑 Rules with keywords: ${rulesWithKeywords.length}`);
+
+            if (rulesWithPatterns.length === 0 && rulesWithKeywords.length === 0) {
+                console.error('❌❌❌ CRITICAL ERROR ❌❌❌');
+                console.error('ALL DETECTION RULES ARE EMPTY!');
+                console.error('The detector CANNOT find any AI writing signs.');
+                console.error('The data file needs to be fixed.');
+                console.error('This is why you see 0 detections.');
+            } else {
+                console.log('✅ Detection rules contain patterns - detector should work!');
+            }
+
+            // Show first 5 rules for verification
+            console.log('===== SAMPLE DETECTION RULES =====');
+            this.wikiData.detectionRules.slice(0, 5).forEach((rule, i) => {
+                console.log(`Rule ${i + 1} (${rule.signId}):`);
+                console.log(`  - Patterns: ${rule.patterns.length} (${rule.patterns.slice(0, 2).join(', ') || 'NONE'})`);
+                console.log(`  - Keywords: ${rule.keywords.length} (${rule.keywords.slice(0, 2).join(', ') || 'NONE'})`);
+                console.log(`  - Weight: ${rule.weight}`);
+            });
+
+            // Show sign details
+            console.log('===== SAMPLE SIGNS =====');
+            this.wikiData.signs.slice(0, 5).forEach((sign, i) => {
+                console.log(`Sign ${i + 1}:`);
+                console.log(`  - ID: ${sign.id}`);
+                console.log(`  - Name: ${sign.name || '❌ EMPTY'}`);
+                console.log(`  - Category: ${sign.category || '❌ EMPTY'}`);
+                console.log(`  - Description: ${sign.description ? 'Has description' : '❌ NO DESCRIPTION'}`);
+                console.log(`  - Examples: ${sign.examples.length}`);
+            });
+
+            console.log('===== COPY EVERYTHING ABOVE THIS LINE =====');
 
             return true;
         } catch (error) {
-            console.error('Failed to load wiki data:', error);
+            console.error('❌ FAILED TO LOAD DATA:', error);
             throw new Error('Failed to initialize detector. Please ensure wiki-data.json is available.');
         }
     }
