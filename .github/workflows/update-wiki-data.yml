@@ -33,20 +33,10 @@ jobs:
         run: |
           npm install axios cheerio
 
-      - name: Fetch Wikipedia article
-        id: scrape
-        continue-on-error: true
+      - name: Skip Wikipedia scraping (using static data)
         run: |
-          node scripts/scrape-wiki.js
-
-      - name: Check scraper status
-        run: |
-          if [ "${{ steps.scrape.outcome }}" == "failure" ]; then
-            echo "⚠️ Wikipedia scraper failed, but continuing with existing data"
-            echo "This is expected if there are network issues. The existing wiki-data.json will be used."
-          else
-            echo "✓ Wikipedia scraper succeeded"
-          fi
+          echo "⚠️ Wikipedia scraper disabled - using static detection patterns"
+          echo "The scraper was creating empty data. Static patterns are more reliable."
 
       - name: Check for changes
         id: check_changes
