@@ -23,8 +23,8 @@
     },
     {
       "name": "Technical Artifacts",
-      "description": "Technical clues and artifacts that reveal AI generation, including specific phrases and formatting errors.",
-      "signs": ["sign-15", "sign-16", "sign-17", "sign-18"]
+      "description": "Technical clues and artifacts that reveal AI generation, including specific phrases, formatting errors, and invisible Unicode watermarks.",
+      "signs": ["sign-15", "sign-16", "sign-17", "sign-18", "sign-19"]
     }
   ],
   "signs": [
@@ -45,7 +45,8 @@
     {"id": "sign-15", "name": "Title Case Headings", "category": "Technical Artifacts", "description": "Using Title Case For Headings instead of Wikipedia's sentence case style", "examples": ["The History Of The Era", "Key Developments In Technology"], "patterns": [], "severity": "medium", "detectability": "high"},
     {"id": "sign-16", "name": "Markdown Artifacts", "category": "Technical Artifacts", "description": "Visible markdown syntax: **, ###, [link](url) instead of proper Wikipedia formatting", "examples": ["**bold**", "### Heading", "[text](url)"], "patterns": [], "severity": "high", "detectability": "high"},
     {"id": "sign-17", "name": "Placeholder Text", "category": "Technical Artifacts", "description": "Draft markers left in: [TODO], [citation needed], Lorem ipsum", "examples": ["[citation needed]", "[TODO]", "[insert date]", "Lorem ipsum"], "patterns": [], "severity": "high", "detectability": "high"},
-    {"id": "sign-18", "name": "Chatbot Disclaimers", "category": "Technical Artifacts", "description": "AI-specific phrases revealing the text source", "examples": ["As an AI", "As an AI language model", "I apologize but", "my last update", "Up to my last training", "based on my training data", "Here is your Wikipedia article"], "patterns": [], "severity": "high", "detectability": "high"}
+    {"id": "sign-18", "name": "Chatbot Disclaimers", "category": "Technical Artifacts", "description": "AI-specific phrases revealing the text source", "examples": ["As an AI", "As an AI language model", "I apologize but", "my last update", "Up to my last training", "based on my training data", "Here is your Wikipedia article"], "patterns": [], "severity": "high", "detectability": "high"},
+    {"id": "sign-19", "name": "Invisible Unicode Watermarks", "category": "Technical Artifacts", "description": "Hidden zero-width characters and special Unicode spaces that AI models insert, such as Zero-Width Space (U+200B), Narrow No-Break Space (U+202F), Zero-Width Joiner (U+200D), Zero-Width Non-Joiner (U+200C), Em Space (U+2003), and Soft Hyphen (U+00AD). These are invisible but detectable markers often found in copy-pasted AI text.", "examples": ["Zero-Width Space", "Narrow No-Break Space", "Hidden Unicode characters"], "patterns": [], "severity": "high", "detectability": "high"}
   ],
   "detectionRules": [
     {"signId": "sign-1", "patterns": ["serves as a testament", "plays a vital role", "stands as a testament", "stands as a powerful reminder", "lasting impact", "underscores the importance"], "keywords": ["testament", "vital", "underscores", "lasting", "impact", "reminder", "poignant"], "weight": 3},
@@ -65,10 +66,11 @@
     {"signId": "sign-15", "patterns": ["^[A-Z][a-z]+(?:\\s[A-Z][a-z]+){2,}$"], "keywords": [], "weight": 2},
     {"signId": "sign-16", "patterns": ["\\*\\*\\w+\\*\\*", "###\\s+\\w", "\\[\\w+\\]\\(http"], "keywords": [], "weight": 3},
     {"signId": "sign-17", "patterns": ["\\[citation needed\\]", "\\[TODO", "\\[insert", "Lorem ipsum"], "keywords": [], "weight": 3},
-    {"signId": "sign-18", "patterns": ["[Aa]s an AI", "[Aa]s an AI language model", "I apologize,? but", "my last update", "[Uu]p to my last training", "based on my training", "Here is your Wikipedia"], "keywords": ["language", "model", "training", "apologize"], "weight": 3}
+    {"signId": "sign-18", "patterns": ["[Aa]s an AI", "[Aa]s an AI language model", "I apologize,? but", "my last update", "[Uu]p to my last training", "based on my training", "Here is your Wikipedia"], "keywords": ["language", "model", "training", "apologize"], "weight": 3},
+    {"signId": "sign-19", "patterns": ["\\u200B", "\\u202F", "\\u200D", "\\u200C", "\\u2003", "\\u00AD"], "keywords": ["unicode", "watermark", "zero-width"], "weight": 3}
   ],
   "statistics": {
-    "totalSigns": 18,
+    "totalSigns": 19,
     "totalCategories": 4,
     "lastScraped": "2026-01-16T00:00:00.000Z"
   }
