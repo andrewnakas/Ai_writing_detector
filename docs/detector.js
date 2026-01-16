@@ -9,9 +9,19 @@ class AIWritingDetector {
 
     async initialize() {
         try {
-            const response = await fetch('wiki-data.json');
+            // Add cache-busting parameter to force reload of data
+            const cacheBuster = new Date().getTime();
+            const response = await fetch(`wiki-data.json?v=${cacheBuster}`, {
+                cache: 'no-cache'
+            });
             this.wikiData = await response.json();
             console.log('✓ Loaded AI writing signs database:', this.wikiData.statistics);
+            console.log(`✓ Found ${this.wikiData.signs.length} signs with ${this.wikiData.detectionRules.length} rules`);
+
+            // Debug: Check if rules have patterns
+            const rulesWithPatterns = this.wikiData.detectionRules.filter(r => r.patterns.length > 0 || r.keywords.length > 0);
+            console.log(`✓ ${rulesWithPatterns.length} rules have detection patterns`);
+
             return true;
         } catch (error) {
             console.error('Failed to load wiki data:', error);

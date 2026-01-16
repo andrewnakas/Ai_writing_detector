@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Detector Test</title>
+</head>
+<body>
+    <h1>Testing AI Writing Detector</h1>
+    <div id="results"></div>
+
+    <script src="detector.js"></script>
+    <script>
+        async function testDetector() {
+            const detector = new AIWritingDetector();
+            await detector.initialize();
+
+            const testText = "Moreover, it's important to note that this serves as a testament to breathtaking innovation. Furthermore, experts say the stunning results are remarkable.";
+
+            const results = detector.analyzeText(testText);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h2>Test Results:</h2>
+                <p><strong>Overall Score:</strong> ${results.overallScore}/100</p>
+                <p><strong>Detections Found:</strong> ${results.detections.length}</p>
+                <h3>Detected Signs:</h3>
+                <ul>
+                    ${results.detections.map(d => `
+                        <li>
+                            <strong>${d.signName}</strong> (${d.severity})<br>
+                            Matches: ${d.matches.length}<br>
+                            Examples: ${d.matches.slice(0, 3).map(m => m.value).join(', ')}
+                        </li>
+                    `).join('')}
+                </ul>
+                <h3>Debug Info:</h3>
+                <pre>${JSON.stringify({
+                    totalSigns: detector.wikiData.signs.length,
+                    totalRules: detector.wikiData.detectionRules.length,
+                    firstRule: detector.wikiData.detectionRules[0]
+                }, null, 2)}</pre>
+            `;
+        }
+
+        testDetector().catch(err => {
+            document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
+            console.error(err);
+        });
+    </script>
+</body>
+</html>
