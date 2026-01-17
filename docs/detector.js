@@ -310,28 +310,26 @@ class AIWritingDetector {
         let lastPos = 0;
 
         merged.forEach(h => {
-            // Add text before highlight
-            result += this.escapeHtml(text.substring(lastPos, h.start));
+            // Add text before highlight - also check for invisible chars in unhighlighted text
+            const beforeText = text.substring(lastPos, h.start);
+            result += this.makeInvisibleCharsVisible(beforeText);
 
             // Add highlighted text
             const severityClass = `highlight-${h.severity}`;
             const title = `${h.signName} (${h.severity} severity)`;
             result += `<mark class="${severityClass}" data-sign="${h.signId}" title="${title}">`;
 
-            // For invisible Unicode watermarks (sign-19), show them as visible markers
-            if (h.signId === 'sign-19') {
-                result += this.makeInvisibleCharsVisible(text.substring(h.start, h.end));
-            } else {
-                result += this.escapeHtml(text.substring(h.start, h.end));
-            }
+            // Always show invisible Unicode characters as visible markers
+            const highlightedText = text.substring(h.start, h.end);
+            result += this.makeInvisibleCharsVisible(highlightedText);
 
             result += '</mark>';
 
             lastPos = h.end;
         });
 
-        // Add remaining text
-        result += this.escapeHtml(text.substring(lastPos));
+        // Add remaining text - also check for invisible chars
+        result += this.makeInvisibleCharsVisible(text.substring(lastPos));
 
         return result;
     }
@@ -343,8 +341,10 @@ class AIWritingDetector {
     }
 
     makeInvisibleCharsVisible(text) {
-        // Replace invisible Unicode characters with visible labels
-        return text
+        // First escape HTML, then replace invisible Unicode characters with visible labels
+        let result = this.escapeHtml(text);
+
+        return result
             .replace(/\u200B/g, '<span class="invisible-char" title="Zero-Width Space (U+200B)">[ZWSP]</span>')
             .replace(/\u202F/g, '<span class="invisible-char" title="Narrow No-Break Space (U+202F)">[NNBSP]</span>')
             .replace(/\u200D/g, '<span class="invisible-char" title="Zero-Width Joiner (U+200D)">[ZWJ]</span>')
