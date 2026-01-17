@@ -8,8 +8,8 @@
   "categories": [
     {
       "name": "Language and Tone",
-      "description": "Distinctive language patterns that AI-generated text exhibits, including promotional language, grandiose phrasing, and editorial commentary.",
-      "signs": ["sign-1", "sign-2", "sign-3", "sign-4", "sign-5", "sign-6"]
+      "description": "Distinctive language patterns that AI-generated text exhibits, including promotional language, grandiose phrasing, editorial commentary, and synonym overuse.",
+      "signs": ["sign-1", "sign-2", "sign-3", "sign-4", "sign-5", "sign-6", "sign-21"]
     },
     {
       "name": "Structural Patterns",
@@ -23,8 +23,8 @@
     },
     {
       "name": "Technical Artifacts",
-      "description": "Technical clues and artifacts that reveal AI generation, including specific phrases, formatting errors, and invisible Unicode watermarks.",
-      "signs": ["sign-15", "sign-16", "sign-17", "sign-18", "sign-19"]
+      "description": "Technical clues and artifacts that reveal AI generation, including specific phrases, formatting errors, invisible Unicode watermarks, and ChatGPT placeholder codes.",
+      "signs": ["sign-15", "sign-16", "sign-17", "sign-18", "sign-19", "sign-20"]
     }
   ],
   "signs": [
@@ -46,32 +46,36 @@
     {"id": "sign-16", "name": "Markdown Artifacts", "category": "Technical Artifacts", "description": "Visible markdown syntax: **, ###, [link](url) instead of proper Wikipedia formatting", "examples": ["**bold**", "### Heading", "[text](url)"], "patterns": [], "severity": "high", "detectability": "high"},
     {"id": "sign-17", "name": "Placeholder Text", "category": "Technical Artifacts", "description": "Draft markers left in: [TODO], [citation needed], Lorem ipsum", "examples": ["[citation needed]", "[TODO]", "[insert date]", "Lorem ipsum"], "patterns": [], "severity": "high", "detectability": "high"},
     {"id": "sign-18", "name": "Chatbot Disclaimers", "category": "Technical Artifacts", "description": "AI-specific phrases revealing the text source", "examples": ["As an AI", "As an AI language model", "I apologize but", "my last update", "Up to my last training", "based on my training data", "Here is your Wikipedia article"], "patterns": [], "severity": "high", "detectability": "high"},
-    {"id": "sign-19", "name": "Invisible Unicode Watermarks", "category": "Technical Artifacts", "description": "Hidden zero-width characters and special Unicode spaces that AI models insert, such as Zero-Width Space (U+200B), Narrow No-Break Space (U+202F), Zero-Width Joiner (U+200D), Zero-Width Non-Joiner (U+200C), Em Space (U+2003), and Soft Hyphen (U+00AD). These are invisible but detectable markers often found in copy-pasted AI text.", "examples": ["Zero-Width Space", "Narrow No-Break Space", "Hidden Unicode characters"], "patterns": [], "severity": "high", "detectability": "high"}
+    {"id": "sign-19", "name": "Invisible Unicode Watermarks", "category": "Technical Artifacts", "description": "Hidden zero-width characters and special Unicode spaces that AI models insert, such as Zero-Width Space (U+200B), Narrow No-Break Space (U+202F), Zero-Width Joiner (U+200D), Zero-Width Non-Joiner (U+200C), Em Space (U+2003), and Soft Hyphen (U+00AD). These are invisible but detectable markers often found in copy-pasted AI text.", "examples": ["Zero-Width Space", "Narrow No-Break Space", "Hidden Unicode characters"], "patterns": [], "severity": "high", "detectability": "high"},
+    {"id": "sign-20", "name": "ChatGPT Placeholder Artifacts", "category": "Technical Artifacts", "description": "ChatGPT-specific placeholder codes like 'turn0search0' that appear when the chatbot tries to add external links or perform searches (observed since February 2025)", "examples": ["turn0search0", "turn1search0", "turn0"], "patterns": [], "severity": "high", "detectability": "high"},
+    {"id": "sign-21", "name": "Repetitive Synonym Cycling", "category": "Language and Tone", "description": "Excessive use of synonyms for the same concept due to AI repetition-penalty code (e.g., protagonist, key player, eponymous character for the same person)", "examples": ["protagonist then key player", "facility then establishment then venue"], "patterns": [], "severity": "medium", "detectability": "medium"}
   ],
   "detectionRules": [
-    {"signId": "sign-1", "patterns": ["serves as a testament", "plays a vital role", "stands as a testament", "stands as a powerful reminder", "lasting impact", "underscores the importance"], "keywords": ["testament", "vital", "underscores", "lasting", "impact", "reminder", "poignant"], "weight": 3},
-    {"signId": "sign-2", "patterns": ["breathtaking", "stunning natural beauty", "stunning", "vibrant traditions", "vibrant", "rich cultural heritage", "picturesque scenery", "picturesque"], "keywords": ["breathtaking", "stunning", "vibrant", "picturesque", "heritage", "tapestry"], "weight": 3},
-    {"signId": "sign-3", "patterns": ["it'?s? important to note", "it is worth noting", "worth noting", "it should be noted", "it bears mentioning"], "keywords": ["important", "noting", "interestingly", "notably", "significantly"], "weight": 2},
+    {"signId": "sign-1", "patterns": ["serves as a testament", "plays a vital role", "stands as a testament", "stands as a powerful reminder", "lasting impact", "underscores the importance", "plays a crucial role", "plays a pivotal role", "serves as a cornerstone", "hallmark of", "paramount importance", "integral part", "quintessential example", "epitomizes", "emblematic of"], "keywords": ["testament", "vital", "underscores", "lasting", "impact", "reminder", "poignant", "pivotal", "crucial", "cornerstone", "hallmark", "paramount", "integral", "quintessential", "epitomizes", "emblematic"], "weight": 3},
+    {"signId": "sign-2", "patterns": ["breathtaking", "stunning natural beauty", "stunning", "vibrant traditions", "vibrant", "rich cultural heritage", "picturesque scenery", "picturesque", "awe-inspiring", "magnificent", "spectacular", "remarkable scenery", "pristine", "idyllic", "enchanting", "captivating landscape"], "keywords": ["breathtaking", "stunning", "vibrant", "picturesque", "heritage", "tapestry", "awe-inspiring", "magnificent", "spectacular", "pristine", "idyllic", "enchanting", "captivating"], "weight": 3},
+    {"signId": "sign-3", "patterns": ["it'?s? important to note", "it is worth noting", "worth noting", "it should be noted", "it bears mentioning", "it'?s? crucial to understand", "one must note", "it'?s? essential to recognize", "it should be emphasized", "it'?s? imperative to", "needless to say"], "keywords": ["important", "noting", "interestingly", "notably", "significantly", "crucial", "essential", "imperative", "recognize", "understand"], "weight": 2},
     {"signId": "sign-4", "patterns": [], "keywords": ["moreover", "furthermore", "however", "nevertheless", "additionally", "consequently", "contrast"], "weight": 2},
     {"signId": "sign-5", "patterns": ["—[^—]{3,}—"], "keywords": [], "weight": 2},
-    {"signId": "sign-6", "patterns": ["ensuring that", "ensuring", "highlighting the", "emphasizing the", "emphasizing", "demonstrating the", "showcasing the", "showcasing"], "keywords": ["ensuring", "highlighting", "emphasizing", "demonstrating", "showcasing", "reflecting"], "weight": 3},
+    {"signId": "sign-6", "patterns": ["ensuring that", "ensuring", "highlighting the", "emphasizing the", "emphasizing", "demonstrating the", "showcasing the", "showcasing", "leveraging", "utilizing", "fostering", "facilitating", "optimizing", "maximizing the", "enhancing the"], "keywords": ["ensuring", "highlighting", "emphasizing", "demonstrating", "showcasing", "reflecting", "leveraging", "utilizing", "fostering", "facilitating", "optimizing", "maximizing", "enhancing"], "weight": 3},
     {"signId": "sign-7", "patterns": ["\\w+,\\s+\\w+,\\s+and\\s+\\w+"], "keywords": [], "weight": 1},
-    {"signId": "sign-8", "patterns": ["[Ii]t'?s? not just", "not just about", "[Nn]ot merely", "[Nn]ot simply", "not so much"], "keywords": [], "weight": 3},
+    {"signId": "sign-8", "patterns": ["[Ii]t'?s? not just", "not just about", "[Nn]ot merely", "[Nn]ot simply", "not so much", "rather than simply", "goes beyond", "more than just", "extends beyond"], "keywords": ["merely", "simply", "beyond"], "weight": 3},
     {"signId": "sign-9", "patterns": ["\\*\\*[A-Z][a-z]+\\*\\*:\\s"], "keywords": [], "weight": 3},
     {"signId": "sign-10", "patterns": ["\\*\\*\\w{4,}\\*\\*"], "keywords": [], "weight": 1},
-    {"signId": "sign-11", "patterns": ["industry reports suggest", "industry reports", "experts say", "studies have shown", "observers have noted", "it is widely believed", "many scholars", "various experts"], "keywords": ["reports", "experts", "observers", "widely", "believed", "scholars"], "weight": 3},
+    {"signId": "sign-11", "patterns": ["industry reports suggest", "industry reports", "experts say", "studies have shown", "observers have noted", "it is widely believed", "many scholars", "various experts", "research suggests", "according to experts", "analysts believe", "critics argue", "some argue that", "it has been suggested", "there is consensus", "general consensus"], "keywords": ["reports", "experts", "observers", "widely", "believed", "scholars", "research", "analysts", "critics", "consensus", "suggested"], "weight": 3},
     {"signId": "sign-12", "patterns": ["multiple scholars", "multiple reviewers", "numerous studies", "various experts", "many researchers"], "keywords": ["multiple", "numerous", "various"], "weight": 3},
-    {"signId": "sign-13", "patterns": ["one of the most", "the best known", "the largest", "the most influential", "among the greatest"], "keywords": ["most", "best", "largest", "greatest", "influential"], "weight": 2},
-    {"signId": "sign-14", "patterns": ["throughout history", "in today'?s? modern world", "as we can see", "it is clear that"], "keywords": ["obviously", "clearly", "evident"], "weight": 1},
+    {"signId": "sign-13", "patterns": ["one of the most", "the best known", "the largest", "the most influential", "among the greatest", "widely regarded as", "considered to be one", "recognized as one of", "renowned for being"], "keywords": ["most", "best", "largest", "greatest", "influential", "renowned", "regarded", "recognized"], "weight": 2},
+    {"signId": "sign-14", "patterns": ["throughout history", "in today'?s? modern world", "as we can see", "it is clear that", "in conclusion", "to sum up", "in summary", "at the end of the day", "when all is said and done", "in the final analysis"], "keywords": ["obviously", "clearly", "evident", "conclusion", "summary"], "weight": 1},
     {"signId": "sign-15", "patterns": ["^[A-Z][a-z]+(?:\\s[A-Z][a-z]+){2,}$"], "keywords": [], "weight": 2},
     {"signId": "sign-16", "patterns": ["\\*\\*\\w+\\*\\*", "###\\s+\\w", "\\[\\w+\\]\\(http"], "keywords": [], "weight": 3},
     {"signId": "sign-17", "patterns": ["\\[citation needed\\]", "\\[TODO", "\\[insert", "Lorem ipsum"], "keywords": [], "weight": 3},
-    {"signId": "sign-18", "patterns": ["[Aa]s an AI", "[Aa]s an AI language model", "I apologize,? but", "my last update", "[Uu]p to my last training", "based on my training", "Here is your Wikipedia"], "keywords": ["language", "model", "training", "apologize"], "weight": 3},
-    {"signId": "sign-19", "patterns": ["\\u200B", "\\u202F", "\\u200D", "\\u200C", "\\u2003", "\\u00AD"], "keywords": ["unicode", "watermark", "zero-width"], "weight": 3}
+    {"signId": "sign-18", "patterns": ["[Aa]s an AI", "[Aa]s an AI language model", "I apologize,? but", "my last update", "[Uu]p to my last training", "based on my training", "Here is your Wikipedia", "I don'?t have access to", "I cannot browse", "my knowledge cutoff", "as of my knowledge cutoff", "I'?m not able to"], "keywords": ["language", "model", "training", "apologize", "cutoff", "access", "browse"], "weight": 3},
+    {"signId": "sign-19", "patterns": ["[\u200B\u202F\u200D\u200C\u2003\u00AD\u2014]+"], "keywords": [], "weight": 3},
+    {"signId": "sign-20", "patterns": ["turn[0-9]+search[0-9]+", "turn[0-9]+", "search[0-9]+result"], "keywords": ["turn0search", "placeholder"], "weight": 3},
+    {"signId": "sign-21", "patterns": ["protagonist[^.]{10,100}(?:key player|main character|eponymous)", "establishment[^.]{10,100}(?:facility|venue|location)", "individual[^.]{10,100}(?:person|figure|character)"], "keywords": ["protagonist", "establishment", "individual", "entity", "facility"], "weight": 2}
   ],
   "statistics": {
-    "totalSigns": 19,
+    "totalSigns": 21,
     "totalCategories": 4,
-    "lastScraped": "2026-01-16T00:00:00.000Z"
+    "lastScraped": "2026-01-17T00:00:00.000Z"
   }
 }
