@@ -1,14 +1,17 @@
 // Application Logic for AI Writing Detector
 
-let detector;
+let patternDetector;
+let compressionDetector;
 let currentResults = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Initialize detector
-        detector = new AIWritingDetector();
-        await detector.initialize();
+        // Initialize both detectors
+        patternDetector = new AIWritingDetector();
+        await patternDetector.initialize();
+
+        compressionDetector = new CompressionDetector();
 
         // Update UI with metadata
         updateMetadataUI();
@@ -24,9 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function updateMetadataUI() {
-    if (!detector.wikiData) return;
+    if (!patternDetector.wikiData) return;
 
-    const lastUpdate = new Date(detector.wikiData.metadata.lastUpdated);
+    const lastUpdate = new Date(patternDetector.wikiData.metadata.lastUpdated);
     const formattedDate = lastUpdate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -34,7 +37,7 @@ function updateMetadataUI() {
     });
 
     document.getElementById('lastUpdate').textContent = `Last updated: ${formattedDate}`;
-    document.getElementById('signCount').textContent = `${detector.wikiData.statistics.totalSigns}`;
+    document.getElementById('signCount').textContent = `${patternDetector.wikiData.statistics.totalSigns}`;
     document.getElementById('footerUpdate').textContent = formattedDate;
 }
 
@@ -105,8 +108,19 @@ async function analyzeText() {
     document.getElementById('resultsSection').style.display = 'none';
 
     try {
-        // Analyze text
-        currentResults = detector.analyzeText(text);
+        // Run both detectors in parallel
+        const [patternResults, compressionResults] = await Promise.all([
+            Promise.resolve(patternDetector.analyzeText(text)),
+            compressionDetector.analyze(text)
+        ]);
+
+        // Combine results
+        currentResults = {
+            patternBased: patternResults,
+            compressionBased: compressionResults,
+            combined: calculateCombinedScore(patternResults, compressionResults),
+            text: text
+        };
 
         // Display results
         displayResults(currentResults);
@@ -127,21 +141,118 @@ async function analyzeText() {
     }
 }
 
+function calculateCombinedScore(patternResults, compressionResults) {
+    // Weight pattern-based detector more heavily (70%) as it's more specific
+    // Compression detector contributes 30%
+    const patternWeight = 0.70;
+    const compressionWeight = 0.30;
+
+    const combinedScore = Math.round(
+        patternResults.overallScore * patternWeight +
+        compressionResults.score * compressionWeight
+    );
+
+    // Determine combined confidence
+    let confidence = 'low';
+    if (patternResults.confidence === 'high' && compressionResults.confidence === 'high') {
+        confidence = 'high';
+    } else if (patternResults.confidence === 'high' || compressionResults.confidence === 'high') {
+        confidence = 'medium-high';
+    } else if (patternResults.confidence === 'medium' || compressionResults.confidence === 'medium') {
+        confidence = 'medium';
+    }
+
+    // Generate agreement analysis
+    const scoreDifference = Math.abs(patternResults.overallScore - compressionResults.score);
+    let agreement = '';
+    if (scoreDifference < 10) {
+        agreement = '✓ Both methods strongly agree';
+    } else if (scoreDifference < 25) {
+        agreement = '~ Methods moderately agree';
+    } else {
+        agreement = '⚠ Methods show different assessments';
+    }
+
+    return {
+        score: combinedScore,
+        confidence: confidence,
+        agreement: agreement,
+        scoreDifference: scoreDifference
+    };
+}
+
 function displayResults(results) {
     // Show results section
     document.getElementById('resultsSection').style.display = 'block';
 
-    // Display overall score
+    // Display overall combined score
     displayOverallScore(results);
 
-    // Display category scores
-    displayCategoryScores(results);
+    // Display detection methods comparison
+    displayDetectionMethods(results);
 
-    // Display detected signs
-    displayDetectedSigns(results);
+    // Display category scores (pattern-based)
+    displayCategoryScores(results.patternBased);
 
-    // Display highlighted text
-    displayHighlightedText(results);
+    // Display detected signs (pattern-based)
+    displayDetectedSigns(results.patternBased);
+
+    // Display highlighted text (pattern-based)
+    displayHighlightedText(results.patternBased);
+}
+
+function displayDetectionMethods(results) {
+    const container = document.getElementById('detectionMethodsContainer');
+
+    container.innerHTML = `
+        <div class="method-card">
+            <div class="method-header">
+                <span class="method-icon">🎯</span>
+                <h4>Pattern-Based</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score">${results.patternBased.overallScore}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Confidence: ${results.patternBased.confidence}</p>
+            <p class="method-description">Analyzes ${results.patternBased.detections.length} Wikipedia-documented patterns including language tone, structure, and technical artifacts.</p>
+        </div>
+
+        <div class="method-card">
+            <div class="method-header">
+                <span class="method-icon">📦</span>
+                <h4>Compression-Based</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score">${results.compressionBased.score}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Confidence: ${results.compressionBased.confidence}</p>
+            <p class="method-description">${results.compressionBased.explanation}</p>
+            <details class="method-details">
+                <summary>Technical Metrics</summary>
+                <ul>
+                    <li>Text alone ratio: ${results.compressionBased.metrics.textAloneRatio}</li>
+                    <li>With AI corpus: ${results.compressionBased.metrics.withAICorpusRatio}</li>
+                    <li>Difference: ${results.compressionBased.metrics.difference}</li>
+                </ul>
+            </details>
+        </div>
+
+        <div class="method-card method-card-combined">
+            <div class="method-header">
+                <span class="method-icon">⚖️</span>
+                <h4>Combined Score</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score method-score-combined">${results.combined.score}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Overall: ${results.combined.confidence}</p>
+            <p class="method-agreement">${results.combined.agreement}</p>
+            <p class="method-description">Weighted average: 70% pattern-based, 30% compression-based analysis.</p>
+        </div>
+    `;
 }
 
 function displayOverallScore(results) {
@@ -151,27 +262,43 @@ function displayOverallScore(results) {
     const confidenceLevel = document.getElementById('confidenceLevel');
     const detectionCount = document.getElementById('detectionCount');
 
+    // Use combined score for overall display
+    const combinedScore = results.combined.score;
+
     // Animate score
-    animateScore(scoreValue, results.overallScore);
+    animateScore(scoreValue, combinedScore);
 
     // Update score circle color
     scoreCircle.className = 'score-circle';
-    if (results.overallScore >= 70) {
+    if (combinedScore >= 70) {
         scoreCircle.classList.add('score-very-high');
-    } else if (results.overallScore >= 50) {
+    } else if (combinedScore >= 50) {
         scoreCircle.classList.add('score-high');
-    } else if (results.overallScore >= 30) {
+    } else if (combinedScore >= 30) {
         scoreCircle.classList.add('score-medium');
     } else {
         scoreCircle.classList.add('score-low');
     }
 
-    // Update summary
-    scoreSummary.textContent = results.summary;
+    // Generate combined summary
+    let likelihood = '';
+    if (combinedScore >= 70) {
+        likelihood = 'very high likelihood';
+    } else if (combinedScore >= 50) {
+        likelihood = 'high likelihood';
+    } else if (combinedScore >= 30) {
+        likelihood = 'moderate likelihood';
+    } else if (combinedScore >= 15) {
+        likelihood = 'some indicators';
+    } else {
+        likelihood = 'few indicators';
+    }
+
+    scoreSummary.textContent = `Multi-method analysis shows ${likelihood} of AI generation. ${results.combined.agreement}`;
 
     // Update metadata
-    confidenceLevel.textContent = `Confidence: ${results.confidence}`;
-    detectionCount.textContent = `${results.detections.length} sign${results.detections.length !== 1 ? 's' : ''} detected`;
+    confidenceLevel.textContent = `Combined Confidence: ${results.combined.confidence}`;
+    detectionCount.textContent = `${results.patternBased.detections.length} pattern${results.patternBased.detections.length !== 1 ? 's' : ''} detected`;
 }
 
 function animateScore(element, targetScore) {
