@@ -317,7 +317,14 @@ class AIWritingDetector {
             const severityClass = `highlight-${h.severity}`;
             const title = `${h.signName} (${h.severity} severity)`;
             result += `<mark class="${severityClass}" data-sign="${h.signId}" title="${title}">`;
-            result += this.escapeHtml(text.substring(h.start, h.end));
+
+            // For invisible Unicode watermarks (sign-19), show them as visible markers
+            if (h.signId === 'sign-19') {
+                result += this.makeInvisibleCharsVisible(text.substring(h.start, h.end));
+            } else {
+                result += this.escapeHtml(text.substring(h.start, h.end));
+            }
+
             result += '</mark>';
 
             lastPos = h.end;
@@ -333,6 +340,30 @@ class AIWritingDetector {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    makeInvisibleCharsVisible(text) {
+        // Replace invisible Unicode characters with visible labels
+        return text
+            .replace(/\u200B/g, '<span class="invisible-char" title="Zero-Width Space (U+200B)">[ZWSP]</span>')
+            .replace(/\u202F/g, '<span class="invisible-char" title="Narrow No-Break Space (U+202F)">[NNBSP]</span>')
+            .replace(/\u200D/g, '<span class="invisible-char" title="Zero-Width Joiner (U+200D)">[ZWJ]</span>')
+            .replace(/\u200C/g, '<span class="invisible-char" title="Zero-Width Non-Joiner (U+200C)">[ZWNJ]</span>')
+            .replace(/\u2003/g, '<span class="invisible-char" title="Em Space (U+2003)">[EM]</span>')
+            .replace(/\u00AD/g, '<span class="invisible-char" title="Soft Hyphen (U+00AD)">[SHY]</span>')
+            .replace(/\u2014/g, '<span class="invisible-char" title="Em Dash (U+2014)">[—]</span>');
+    }
+
+    makeInvisibleCharsVisibleText(text) {
+        // Replace invisible Unicode characters with visible text labels (for plain text output)
+        return text
+            .replace(/\u200B/g, '[ZWSP]')
+            .replace(/\u202F/g, '[NNBSP]')
+            .replace(/\u200D/g, '[ZWJ]')
+            .replace(/\u200C/g, '[ZWNJ]')
+            .replace(/\u2003/g, '[EM]')
+            .replace(/\u00AD/g, '[SHY]')
+            .replace(/\u2014/g, '[—]');
     }
 
     async analyzeUrl(url) {
@@ -392,7 +423,11 @@ class AIWritingDetector {
                 if (detection.matches.length > 0) {
                     output += `   Examples:\n`;
                     detection.matches.slice(0, 3).forEach(match => {
-                        output += `     - "${match.value}"\n`;
+                        // For invisible Unicode watermarks, show them as visible markers
+                        const displayValue = detection.signId === 'sign-19'
+                            ? this.makeInvisibleCharsVisibleText(match.value)
+                            : match.value;
+                        output += `     - "${displayValue}"\n`;
                     });
                 }
             });
