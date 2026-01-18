@@ -93,6 +93,23 @@
                             Stable Diffusion, Firefly, and others. Results are probabilistic, not definitive.
                         </p>
                     </div>
+
+                    <div class="debug-console-container" style="margin-top: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">📱 Mobile Debug Console</h4>
+                            <button onclick="clearDebugConsole()" class="button button-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Clear</button>
+                        </div>
+                        <textarea
+                            id="mobileDebugConsole"
+                            readonly
+                            rows="10"
+                            style="width: 100%; font-family: monospace; font-size: 0.7rem; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); resize: vertical;"
+                            placeholder="Debug logs will appear here when you upload and analyze an image..."
+                        ></textarea>
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            📋 Tap the text area above to copy all debug logs. Use this if you need to report an issue.
+                        </p>
+                    </div>
                 </div>
 
                 <div class="action-buttons">

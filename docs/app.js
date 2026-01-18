@@ -5,6 +5,7 @@ let compressionDetector;
 let imageVideoDetector;
 let currentResults = null;
 let currentImageFile = null;
+let debugLogs = [];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
@@ -24,8 +25,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupEventListeners();
 
         console.log('✓ Application initialized successfully');
+        debugLog('Application initialized successfully');
+        debugLog('Class checks:');
+        debugLog('- FFTAnalyzer:', typeof FFTAnalyzer);
+        debugLog('- MetadataDetector:', typeof MetadataDetector);
+        debugLog('- PixelAnalysisDetector:', typeof PixelAnalysisDetector);
+        debugLog('- ImageVideoDetector:', typeof ImageVideoDetector);
+        debugLog('imageVideoDetector instance:', typeof imageVideoDetector);
     } catch (error) {
         console.error('Failed to initialize application:', error);
+        debugLog('FATAL ERROR during initialization:', error.message);
+        debugLog('Error stack:', error.stack);
         showError('Failed to load detector. Please refresh the page.');
     }
 });
@@ -111,14 +121,15 @@ function updateCharCount() {
 async function analyzeText() {
     // Check which tab is active
     const activeTab = document.querySelector('.tab-button.active').dataset.tab;
-    console.log('Active tab:', activeTab);
+    debugLog('=== Analyze button clicked ===');
+    debugLog('Active tab:', activeTab);
 
     if (activeTab === 'image') {
-        console.log('Routing to image analysis');
+        debugLog('Routing to IMAGE analysis');
         return analyzeImage();
     }
 
-    console.log('Routing to text analysis');
+    debugLog('Routing to TEXT analysis');
 
     // Text analysis
     const text = document.getElementById('textInput').value.trim();
@@ -703,6 +714,31 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+// Debug Console Functions
+function debugLog(message, data = null) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}`;
+    debugLogs.push(logEntry);
+    if (data) {
+        debugLogs.push(JSON.stringify(data, null, 2));
+    }
+    console.log(message, data);
+    updateDebugConsole();
+}
+
+function updateDebugConsole() {
+    const debugConsole = document.getElementById('mobileDebugConsole');
+    if (debugConsole) {
+        debugConsole.value = debugLogs.join('\n');
+        debugConsole.scrollTop = debugConsole.scrollHeight;
+    }
+}
+
+function clearDebugConsole() {
+    debugLogs = [];
+    updateDebugConsole();
+}
+
 // Image/Video Upload Functions
 
 function setupImageUploadListeners() {
@@ -753,16 +789,26 @@ function setupImageUploadListeners() {
 }
 
 function handleFileSelection(file) {
+    debugLog('=== File selected ===');
+    debugLog('File name:', file.name);
+    debugLog('File size:', file.size + ' bytes');
+    debugLog('File type:', file.type);
+
     currentImageFile = file;
 
     // Validate file
+    debugLog('Validating file...');
     const validation = imageVideoDetector.validateFile(file);
+    debugLog('Validation result:', validation.valid ? 'VALID' : 'INVALID');
+
     if (!validation.valid) {
+        debugLog('Validation error:', validation.error);
         showError(validation.error);
         return;
     }
 
     // Show preview
+    debugLog('Showing file preview...');
     const dropZone = document.getElementById('dropZone');
     const previewContainer = document.getElementById('filePreviewContainer');
     const preview = document.getElementById('filePreview');
@@ -795,13 +841,23 @@ function handleFileSelection(file) {
 }
 
 async function analyzeImage() {
-    console.log('analyzeImage() called');
-    console.log('currentImageFile:', currentImageFile);
+    debugLog('=== analyzeImage() called ===');
+    debugLog('currentImageFile exists:', currentImageFile ? 'YES' : 'NO');
+
+    if (currentImageFile) {
+        debugLog('File name:', currentImageFile.name);
+        debugLog('File size:', currentImageFile.size + ' bytes');
+        debugLog('File type:', currentImageFile.type);
+    }
 
     if (!currentImageFile) {
+        debugLog('ERROR: No image file uploaded');
         showError('Please upload an image first.');
         return;
     }
+
+    debugLog('imageVideoDetector exists:', imageVideoDetector ? 'YES' : 'NO');
+    debugLog('typeof imageVideoDetector:', typeof imageVideoDetector);
 
     // Show loading
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -810,17 +866,19 @@ async function analyzeImage() {
     document.getElementById('resultsSection').style.display = 'none';
 
     try {
-        console.log('Starting image analysis...');
-        console.log('imageVideoDetector:', imageVideoDetector);
+        debugLog('Calling imageVideoDetector.analyzeImage()...');
 
         const results = await imageVideoDetector.analyzeImage(currentImageFile);
 
-        console.log('Image analysis complete:', results);
+        debugLog('Image analysis complete!');
+        debugLog('Results received:', results ? 'YES' : 'NO');
 
         currentResults = results;
 
         // Display results
+        debugLog('Calling displayImageResults()...');
         displayImageResults(results);
+        debugLog('Results displayed successfully');
 
         // Scroll to results
         setTimeout(() => {
@@ -831,9 +889,9 @@ async function analyzeImage() {
         }, 100);
 
     } catch (error) {
-        console.error('Image analysis error:', error);
-        console.error('Error stack:', error.stack);
-        showError('An error occurred during image analysis: ' + error.message);
+        debugLog('ERROR in image analysis:', error.message);
+        debugLog('Error stack:', error.stack);
+        showError('Image analysis error: ' + error.message + ' (check debug console below)');
     } finally {
         const loadingIndicator = document.getElementById('loadingIndicator');
         loadingIndicator.style.display = 'none';
