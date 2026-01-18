@@ -466,17 +466,25 @@ function displayCategoryScores(results) {
 }
 
 function displayDetectedSigns(results) {
-    const container = document.getElementById('detectedSignsContainer');
-    const noSignsMessage = document.getElementById('noSignsMessage');
+    try {
+        const container = document.getElementById('detectedSignsContainer');
+        const noSignsMessage = document.getElementById('noSignsMessage');
 
-    container.innerHTML = '';
+        if (!container) {
+            console.error('detectedSignsContainer not found!');
+            return;
+        }
 
-    if (results.detections.length === 0) {
-        noSignsMessage.style.display = 'block';
-        return;
-    }
+        container.innerHTML = '';
 
-    noSignsMessage.style.display = 'none';
+        console.log('displayDetectedSigns called with', results.detections ? results.detections.length : 0, 'detections');
+
+        if (!results.detections || results.detections.length === 0) {
+            if (noSignsMessage) noSignsMessage.style.display = 'block';
+            return;
+        }
+
+        if (noSignsMessage) noSignsMessage.style.display = 'none';
 
     // Sort by score (highest first)
     const sortedDetections = [...results.detections].sort((a, b) => b.score - a.score);
@@ -570,6 +578,10 @@ function displayDetectedSigns(results) {
 
         container.appendChild(signDiv);
     });
+
+    } catch (error) {
+        console.error('Error in displayDetectedSigns:', error);
+    }
 }
 
 function toggleSign(index) {
@@ -601,9 +613,38 @@ function toggleAllSigns() {
 }
 
 function displayHighlightedText(results) {
-    const container = document.getElementById('highlightedTextContainer');
-    const highlightedHtml = patternDetector.highlightMatches(results.text, results.patternBased.detections);
-    container.innerHTML = highlightedHtml;
+    try {
+        const container = document.getElementById('highlightedTextContainer');
+
+        if (!container) {
+            console.error('highlightedTextContainer not found!');
+            return;
+        }
+
+        if (!results || !results.text) {
+            console.error('No text in results:', results);
+            container.innerHTML = '<p style="color: var(--danger-color);">Error: No text to highlight</p>';
+            return;
+        }
+
+        if (!results.patternBased || !results.patternBased.detections) {
+            console.error('No detections in results:', results);
+            container.innerHTML = '<p style="color: var(--warning-color);">No patterns detected in this text.</p>';
+            return;
+        }
+
+        console.log('Highlighting text with', results.patternBased.detections.length, 'detections');
+        const highlightedHtml = patternDetector.highlightMatches(results.text, results.patternBased.detections);
+        container.innerHTML = highlightedHtml;
+        console.log('Highlighted text displayed successfully');
+
+    } catch (error) {
+        console.error('Error in displayHighlightedText:', error);
+        const container = document.getElementById('highlightedTextContainer');
+        if (container) {
+            container.innerHTML = `<p style="color: var(--danger-color);">Error displaying highlighted text: ${error.message}</p>`;
+        }
+    }
 }
 
 function toggleLegend() {
