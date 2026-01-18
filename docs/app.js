@@ -277,8 +277,8 @@ function displayResults(results) {
     // Display detected signs (pattern-based)
     displayDetectedSigns(results.patternBased);
 
-    // Display highlighted text (pattern-based)
-    displayHighlightedText(results.patternBased);
+    // Display highlighted text (pattern-based) - pass full results
+    displayHighlightedText(results);
 }
 
 function displayDetectionMethods(results) {
@@ -525,7 +525,7 @@ function displayDetectedSigns(results) {
         citation.className = 'sign-citation';
         citation.innerHTML = `
             <strong>Wikipedia Reference:</strong>
-            <a href="${detector.wikiData.metadata.sourceUrl}" target="_blank" rel="noopener">
+            <a href="${patternDetector.wikiData.metadata.sourceUrl}" target="_blank" rel="noopener">
                 ${detection.wikiSection}
             </a>
         `;
@@ -602,7 +602,7 @@ function toggleAllSigns() {
 
 function displayHighlightedText(results) {
     const container = document.getElementById('highlightedTextContainer');
-    const highlightedHtml = patternDetector.highlightMatches(results.text, results.detections);
+    const highlightedHtml = patternDetector.highlightMatches(results.text, results.patternBased.detections);
     container.innerHTML = highlightedHtml;
 }
 
@@ -638,7 +638,8 @@ function copyReport() {
     }
 
     try {
-        const report = patternDetector.formatResultsAsText(currentResults);
+        // Use the pattern detector's built-in export (it stores results internally)
+        const report = patternDetector.exportResults('text');
         navigator.clipboard.writeText(report).then(() => {
             showSuccess('Report copied to clipboard!');
         }).catch(() => {
