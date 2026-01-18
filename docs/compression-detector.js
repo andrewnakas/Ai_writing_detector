@@ -36,31 +36,48 @@ Throughout history, technological advancements have been pivotal. As we can see,
      * Simple compression using repeated substring detection
      */
     simpleCompress(text) {
-        let result = '';
-        let dict = new Map();
-        let dictIndex = 0;
+        try {
+            let result = '';
+            let dict = new Map();
+            let dictIndex = 0;
 
-        // Build a simple dictionary of repeated substrings
-        for (let len = 10; len >= 3; len--) {
-            for (let i = 0; i <= text.length - len; i++) {
-                const substr = text.substring(i, i + len);
-                if (!dict.has(substr)) {
-                    const count = (text.match(new RegExp(this.escapeRegex(substr), 'g')) || []).length;
-                    if (count > 1) {
-                        dict.set(substr, `~${dictIndex}~`);
-                        dictIndex++;
+            // Build a simple dictionary of repeated substrings
+            for (let len = 10; len >= 3; len--) {
+                for (let i = 0; i <= text.length - len; i++) {
+                    const substr = text.substring(i, i + len);
+                    if (!dict.has(substr)) {
+                        try {
+                            const escapedSubstr = this.escapeRegex(substr);
+                            const regex = new RegExp(escapedSubstr, 'g');
+                            const matches = text.match(regex);
+                            const count = matches ? matches.length : 0;
+                            if (count > 1) {
+                                dict.set(substr, `~${dictIndex}~`);
+                                dictIndex++;
+                            }
+                        } catch (e) {
+                            // Skip if regex fails
+                            continue;
+                        }
                     }
                 }
             }
+
+            // Replace substrings with dictionary references
+            result = text;
+            dict.forEach((ref, substr) => {
+                try {
+                    result = result.split(substr).join(ref);
+                } catch (e) {
+                    // Skip if replacement fails
+                }
+            });
+
+            return result;
+        } catch (error) {
+            // If compression fails, return original text
+            return text;
         }
-
-        // Replace substrings with dictionary references
-        result = text;
-        dict.forEach((ref, substr) => {
-            result = result.split(substr).join(ref);
-        });
-
-        return result;
     }
 
     escapeRegex(str) {

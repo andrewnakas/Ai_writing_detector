@@ -108,11 +108,41 @@ async function analyzeText() {
     document.getElementById('resultsSection').style.display = 'none';
 
     try {
-        // Run both detectors in parallel
-        const [patternResults, compressionResults] = await Promise.all([
-            Promise.resolve(patternDetector.analyzeText(text)),
-            compressionDetector.analyze(text)
-        ]);
+        // Run both detectors with individual error handling
+        let patternResults, compressionResults;
+
+        console.log('Starting pattern-based analysis...');
+        try {
+            patternResults = patternDetector.analyzeText(text);
+            console.log('Pattern-based analysis complete:', patternResults);
+        } catch (error) {
+            console.error('Pattern detector error:', error);
+            showError('Pattern-based analysis failed: ' + error.message);
+            document.getElementById('loadingIndicator').style.display = 'none';
+            return;
+        }
+
+        console.log('Starting compression-based analysis...');
+        try {
+            compressionResults = await compressionDetector.analyze(text);
+            console.log('Compression-based analysis complete:', compressionResults);
+        } catch (error) {
+            console.error('Compression detector error:', error);
+            console.warn('Using fallback compression results');
+            // Use fallback compression results if it fails
+            compressionResults = {
+                method: 'Compression-Based',
+                score: 0,
+                confidence: 'low',
+                explanation: 'Compression analysis unavailable: ' + error.message,
+                metrics: {
+                    textAloneRatio: 0,
+                    withAICorpusRatio: 0,
+                    difference: 0,
+                    textLength: text.length
+                }
+            };
+        }
 
         // Combine results
         currentResults = {
@@ -204,6 +234,24 @@ function displayResults(results) {
 function displayDetectionMethods(results) {
     const container = document.getElementById('detectionMethodsContainer');
 
+    if (!results || !results.patternBased || !results.compressionBased || !results.combined) {
+        container.innerHTML = '<p>Error displaying detection methods.</p>';
+        return;
+    }
+
+    const patternScore = results.patternBased.overallScore || 0;
+    const patternConfidence = results.patternBased.confidence || 'unknown';
+    const patternDetections = results.patternBased.detections || [];
+
+    const compressionScore = results.compressionBased.score || 0;
+    const compressionConfidence = results.compressionBased.confidence || 'unknown';
+    const compressionExplanation = results.compressionBased.explanation || 'No explanation available';
+    const metrics = results.compressionBased.metrics || {};
+
+    const combinedScore = results.combined.score || 0;
+    const combinedConfidence = results.combined.confidence || 'unknown';
+    const combinedAgreement = results.combined.agreement || '';
+
     container.innerHTML = `
         <div class="method-card">
             <div class="method-header">
@@ -211,11 +259,11 @@ function displayDetectionMethods(results) {
                 <h4>Pattern-Based</h4>
             </div>
             <div class="method-score-display">
-                <div class="method-score">${results.patternBased.overallScore}</div>
+                <div class="method-score">${patternScore}</div>
                 <div class="method-score-label">/100</div>
             </div>
-            <p class="method-confidence">Confidence: ${results.patternBased.confidence}</p>
-            <p class="method-description">Analyzes ${results.patternBased.detections.length} Wikipedia-documented patterns including language tone, structure, and technical artifacts.</p>
+            <p class="method-confidence">Confidence: ${patternConfidence}</p>
+            <p class="method-description">Analyzes ${patternDetections.length} Wikipedia-documented patterns including language tone, structure, and technical artifacts.</p>
         </div>
 
         <div class="method-card">
@@ -224,17 +272,17 @@ function displayDetectionMethods(results) {
                 <h4>Compression-Based</h4>
             </div>
             <div class="method-score-display">
-                <div class="method-score">${results.compressionBased.score}</div>
+                <div class="method-score">${compressionScore}</div>
                 <div class="method-score-label">/100</div>
             </div>
-            <p class="method-confidence">Confidence: ${results.compressionBased.confidence}</p>
-            <p class="method-description">${results.compressionBased.explanation}</p>
+            <p class="method-confidence">Confidence: ${compressionConfidence}</p>
+            <p class="method-description">${compressionExplanation}</p>
             <details class="method-details">
                 <summary>Technical Metrics</summary>
                 <ul>
-                    <li>Text alone ratio: ${results.compressionBased.metrics.textAloneRatio}</li>
-                    <li>With AI corpus: ${results.compressionBased.metrics.withAICorpusRatio}</li>
-                    <li>Difference: ${results.compressionBased.metrics.difference}</li>
+                    <li>Text alone ratio: ${metrics.textAloneRatio || 'N/A'}</li>
+                    <li>With AI corpus: ${metrics.withAICorpusRatio || 'N/A'}</li>
+                    <li>Difference: ${metrics.difference || 'N/A'}</li>
                 </ul>
             </details>
         </div>
@@ -245,11 +293,11 @@ function displayDetectionMethods(results) {
                 <h4>Combined Score</h4>
             </div>
             <div class="method-score-display">
-                <div class="method-score method-score-combined">${results.combined.score}</div>
+                <div class="method-score method-score-combined">${combinedScore}</div>
                 <div class="method-score-label">/100</div>
             </div>
-            <p class="method-confidence">Overall: ${results.combined.confidence}</p>
-            <p class="method-agreement">${results.combined.agreement}</p>
+            <p class="method-confidence">Overall: ${combinedConfidence}</p>
+            <p class="method-agreement">${combinedAgreement}</p>
             <p class="method-description">Weighted average: 70% pattern-based, 30% compression-based analysis.</p>
         </div>
     `;
