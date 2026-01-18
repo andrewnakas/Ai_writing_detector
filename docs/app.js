@@ -900,68 +900,108 @@ async function analyzeImage() {
 }
 
 function displayImageResults(results) {
-    console.log('displayImageResults called with:', results);
+    debugLog('=== displayImageResults() called ===');
+    debugLog('Results object keys:', Object.keys(results).join(', '));
 
-    // Show results section
-    document.getElementById('resultsSection').style.display = 'block';
+    try {
+        // Show results section
+        const resultsSection = document.getElementById('resultsSection');
+        debugLog('resultsSection element:', resultsSection ? 'FOUND' : 'NOT FOUND');
 
-    // Display overall score
-    displayImageOverallScore(results);
+        resultsSection.style.display = 'block';
+        debugLog('Set resultsSection display to block');
 
-    // Display detection methods
-    displayImageDetectionMethods(results);
+        // Display overall score
+        debugLog('Calling displayImageOverallScore()...');
+        displayImageOverallScore(results);
+        debugLog('displayImageOverallScore() complete');
 
-    // Hide text-specific sections
-    const categoryCard = document.getElementById('categoryScoresContainer')?.closest('.card');
-    const signsCard = document.getElementById('detectedSignsContainer')?.closest('.card');
-    const highlightCard = document.getElementById('highlightedTextContainer')?.closest('.card');
+        // Display detection methods
+        debugLog('Calling displayImageDetectionMethods()...');
+        displayImageDetectionMethods(results);
+        debugLog('displayImageDetectionMethods() complete');
 
-    if (categoryCard) categoryCard.style.display = 'none';
-    if (signsCard) signsCard.style.display = 'none';
-    if (highlightCard) highlightCard.style.display = 'none';
+        // Hide text-specific sections
+        debugLog('Hiding text-specific sections...');
+        const categoryCard = document.getElementById('categoryScoresContainer')?.closest('.card');
+        const signsCard = document.getElementById('detectedSignsContainer')?.closest('.card');
+        const highlightCard = document.getElementById('highlightedTextContainer')?.closest('.card');
 
-    console.log('Image results displayed successfully');
+        debugLog('categoryCard:', categoryCard ? 'FOUND' : 'NOT FOUND');
+        debugLog('signsCard:', signsCard ? 'FOUND' : 'NOT FOUND');
+        debugLog('highlightCard:', highlightCard ? 'FOUND' : 'NOT FOUND');
+
+        if (categoryCard) categoryCard.style.display = 'none';
+        if (signsCard) signsCard.style.display = 'none';
+        if (highlightCard) highlightCard.style.display = 'none';
+
+        debugLog('=== Image results displayed successfully ===');
+    } catch (error) {
+        debugLog('ERROR in displayImageResults:', error.message);
+        debugLog('Error stack:', error.stack);
+    }
 }
 
 function displayImageOverallScore(results) {
-    const scoreValue = document.getElementById('scoreValue');
-    const scoreCircle = document.getElementById('scoreCircle');
-    const scoreSummary = document.getElementById('scoreSummary');
-    const confidenceLevel = document.getElementById('confidenceLevel');
-    const detectionCount = document.getElementById('detectionCount');
+    try {
+        debugLog('displayImageOverallScore: Getting DOM elements...');
+        const scoreValue = document.getElementById('scoreValue');
+        const scoreCircle = document.getElementById('scoreCircle');
+        const scoreSummary = document.getElementById('scoreSummary');
+        const confidenceLevel = document.getElementById('confidenceLevel');
+        const detectionCount = document.getElementById('detectionCount');
 
-    const combinedScore = results.combined.score;
+        debugLog('scoreValue:', scoreValue ? 'FOUND' : 'NOT FOUND');
+        debugLog('scoreCircle:', scoreCircle ? 'FOUND' : 'NOT FOUND');
 
-    // Animate score
-    animateScore(scoreValue, combinedScore);
+        const combinedScore = results.combined.score;
+        debugLog('Combined score:', combinedScore);
 
-    // Update score circle color
-    scoreCircle.className = 'score-circle';
-    if (combinedScore >= 70) {
-        scoreCircle.classList.add('score-very-high');
-    } else if (combinedScore >= 50) {
-        scoreCircle.classList.add('score-high');
-    } else if (combinedScore >= 30) {
-        scoreCircle.classList.add('score-medium');
-    } else {
-        scoreCircle.classList.add('score-low');
+        // Animate score
+        animateScore(scoreValue, combinedScore);
+
+        // Update score circle color
+        scoreCircle.className = 'score-circle';
+        if (combinedScore >= 70) {
+            scoreCircle.classList.add('score-very-high');
+        } else if (combinedScore >= 50) {
+            scoreCircle.classList.add('score-high');
+        } else if (combinedScore >= 30) {
+            scoreCircle.classList.add('score-medium');
+        } else {
+            scoreCircle.classList.add('score-low');
+        }
+
+        scoreSummary.textContent = `${results.combined.assessment}. ${results.combined.agreement}`;
+
+        // Update metadata
+        confidenceLevel.textContent = `Combined Confidence: ${results.combined.confidence}`;
+        detectionCount.textContent = `${results.imageInfo.dimensions.width}×${results.imageInfo.dimensions.height} · ${(results.imageInfo.fileSize / 1024).toFixed(1)} KB`;
+
+        debugLog('Overall score display updated');
+    } catch (error) {
+        debugLog('ERROR in displayImageOverallScore:', error.message);
     }
-
-    scoreSummary.textContent = `${results.combined.assessment}. ${results.combined.agreement}`;
-
-    // Update metadata
-    confidenceLevel.textContent = `Combined Confidence: ${results.combined.confidence}`;
-    detectionCount.textContent = `${results.imageInfo.dimensions.width}×${results.imageInfo.dimensions.height} · ${(results.imageInfo.fileSize / 1024).toFixed(1)} KB`;
 }
 
 function displayImageDetectionMethods(results) {
-    const container = document.getElementById('detectionMethodsContainer');
+    try {
+        debugLog('displayImageDetectionMethods: Starting...');
+        const container = document.getElementById('detectionMethodsContainer');
+        debugLog('detectionMethodsContainer:', container ? 'FOUND' : 'NOT FOUND');
 
-    const pixelResults = results.pixelAnalysis || {};
-    const metadataResults = results.metadataAnalysis || {};
-    const combinedResults = results.combined || {};
+        const pixelResults = results.pixelAnalysis || {};
+        const metadataResults = results.metadataAnalysis || {};
+        const combinedResults = results.combined || {};
 
-    container.innerHTML = `
+        debugLog('Pixel score:', pixelResults.score);
+        debugLog('Metadata score:', metadataResults.score);
+        debugLog('Combined score:', combinedResults.score);
+        debugLog('Image element:', results.imageElement ? 'EXISTS' : 'MISSING');
+
+        debugLog('Building HTML for detection methods...');
+
+        container.innerHTML = `
         <div class="image-display-container">
             <img src="${results.imageElement.src}" alt="Analyzed Image" class="analyzed-image">
         </div>
@@ -1078,6 +1118,13 @@ function displayImageDetectionMethods(results) {
             </details>
         </div>
     `;
+
+        debugLog('HTML set for detection methods container');
+        debugLog('Container innerHTML length:', container.innerHTML.length + ' characters');
+    } catch (error) {
+        debugLog('ERROR in displayImageDetectionMethods:', error.message);
+        debugLog('Error stack:', error.stack);
+    }
 }
 
 // Utility function for legend toggle (called from HTML)
