@@ -783,6 +783,7 @@ function setupImageUploadListeners() {
         document.getElementById('dropZone').style.display = 'flex';
         document.getElementById('filePreviewContainer').style.display = 'none';
         document.getElementById('filePreview').innerHTML = '';
+        document.getElementById('inlineImageResults').style.display = 'none';
         fileInput.value = '';
         document.getElementById('resultsSection').style.display = 'none';
     });
@@ -934,7 +935,20 @@ function displayImageResults(results) {
     debugLog('Results object keys:', Object.keys(results).join(', '));
 
     try {
-        // Show results section
+        // Show INLINE results in the image tab
+        const inlineResults = document.getElementById('inlineImageResults');
+        const inlineContent = document.getElementById('inlineImageResultsContent');
+
+        debugLog('inlineImageResults:', inlineResults ? 'FOUND' : 'NOT FOUND');
+        debugLog('inlineImageResultsContent:', inlineContent ? 'FOUND' : 'NOT FOUND');
+
+        if (inlineResults && inlineContent) {
+            inlineResults.style.display = 'block';
+            inlineContent.innerHTML = generateInlineImageResults(results);
+            debugLog('Inline results populated and displayed');
+        }
+
+        // Also show results section (for desktop users who scroll)
         const resultsSection = document.getElementById('resultsSection');
         debugLog('resultsSection element:', resultsSection ? 'FOUND' : 'NOT FOUND');
 
@@ -970,6 +984,99 @@ function displayImageResults(results) {
         debugLog('ERROR in displayImageResults:', error.message);
         debugLog('Error stack:', error.stack);
     }
+}
+
+function generateInlineImageResults(results) {
+    const pixel = results.pixelAnalysis || {};
+    const metadata = results.metadataAnalysis || {};
+    const combined = results.combined || {};
+    const imageInfo = results.imageInfo || {};
+
+    return `
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+            <img src="${results.imageElement.src}" alt="Analyzed Image" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); margin-bottom: 1rem;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: ${combined.score >= 50 ? 'var(--danger-color)' : 'var(--success-color)'};">
+                    ${combined.score}
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Combined Score
+                </div>
+            </div>
+
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--text-secondary);">
+                    ${pixel.score || 0}
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Pixel Analysis
+                </div>
+            </div>
+
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--text-secondary);">
+                    ${metadata.score || 0}
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    Metadata Analysis
+                </div>
+            </div>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            <div style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">📊 Assessment</div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                ${combined.assessment}
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-muted);">
+                ${combined.agreement}
+            </div>
+        </div>
+
+        <details style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">🔬 Pixel Analysis Details</summary>
+            <div style="font-size: 0.875rem; margin-top: 0.5rem;">
+                <p><strong>Score:</strong> ${pixel.score}/100</p>
+                <p><strong>Confidence:</strong> ${pixel.confidence}</p>
+                <p><strong>Explanation:</strong> ${pixel.explanation}</p>
+                ${pixel.details && pixel.details.reasons && pixel.details.reasons.length > 0 ? `
+                    <p><strong>Detected patterns:</strong></p>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                        ${pixel.details.reasons.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                ` : ''}
+            </div>
+        </details>
+
+        <details style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">📋 Metadata Analysis Details</summary>
+            <div style="font-size: 0.875rem; margin-top: 0.5rem;">
+                <p><strong>Score:</strong> ${metadata.score}/100</p>
+                <p><strong>Confidence:</strong> ${metadata.confidence}</p>
+                <p><strong>Explanation:</strong> ${metadata.explanation}</p>
+                ${metadata.details ? `
+                    <p><strong>File type:</strong> ${metadata.details.fileType}</p>
+                    <p><strong>Has EXIF:</strong> ${metadata.details.hasEXIF ? 'Yes' : 'No'}</p>
+                    ${metadata.details.aiMarkers && metadata.details.aiMarkers.length > 0 ? `
+                        <p style="color: var(--danger-color); font-weight: 600;">🚨 AI Generator Markers Found: ${metadata.details.aiMarkers.join(', ')}</p>
+                    ` : ''}
+                    ${metadata.details.reasons && metadata.details.reasons.length > 0 ? `
+                        <p><strong>Findings:</strong></p>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            ${metadata.details.reasons.map(r => `<li>${r}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                ` : ''}
+            </div>
+        </details>
+
+        <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md); font-size: 0.875rem; color: var(--text-secondary);">
+            <strong>Image Info:</strong> ${imageInfo.dimensions.width}×${imageInfo.dimensions.height} · ${(imageInfo.fileSize / 1024).toFixed(1)} KB · ${imageInfo.fileType}
+        </div>
+    `;
 }
 
 function displayImageOverallScore(results) {
