@@ -121,18 +121,18 @@ Throughout history, technological advancements have been pivotal. As we can see,
         // Convert to 0-100 score with better scaling
         // Use sigmoid-like function to prevent maxing out too easily
         // Adjusted divisor from 0.1 to 0.05 for more nuanced scoring
-        let rawScore;
+        let rawScore, normalized, softCapped;
         if (difference > 0) {
             // AI-like (compresses better with AI corpus)
             // Scale more conservatively: divide by 0.05 gives range, then apply smoothing
-            const normalized = difference / 0.05;
+            normalized = difference / 0.05;
             // Apply soft cap using tanh-like function: x / (1 + |x|/2)
-            const softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            softCapped = normalized / (1 + Math.abs(normalized) / 2);
             rawScore = 50 + (softCapped * 50);
         } else {
             // Human-like (compresses worse with AI corpus)
-            const normalized = Math.abs(difference) / 0.05;
-            const softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            normalized = Math.abs(difference) / 0.05;
+            softCapped = normalized / (1 + Math.abs(normalized) / 2);
             rawScore = 50 - (softCapped * 50);
         }
 
@@ -153,8 +153,13 @@ Throughout history, technological advancements have been pivotal. As we can see,
             explanation: this.generateExplanation(rawScore),
             metrics: {
                 textAloneRatio: textAloneRatio.toFixed(4),
+                corpusOnlyRatio: corpusOnlyRatio.toFixed(4),
                 withAICorpusRatio: seededRatio.toFixed(4),
-                difference: difference.toFixed(4),
+                expectedRatio: expectedRatio.toFixed(4),
+                difference: difference.toFixed(6),
+                normalized: normalized.toFixed(4),
+                softCapped: softCapped.toFixed(4),
+                rawScore: rawScore,
                 textLength: text.length
             }
         };

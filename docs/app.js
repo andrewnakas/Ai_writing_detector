@@ -277,12 +277,18 @@ function displayDetectionMethods(results) {
             </div>
             <p class="method-confidence">Confidence: ${compressionConfidence}</p>
             <p class="method-description">${compressionExplanation}</p>
-            <details class="method-details">
-                <summary>Technical Metrics</summary>
-                <ul>
-                    <li>Text alone ratio: ${metrics.textAloneRatio || 'N/A'}</li>
-                    <li>With AI corpus: ${metrics.withAICorpusRatio || 'N/A'}</li>
-                    <li>Difference: ${metrics.difference || 'N/A'}</li>
+            <details class="method-details" open>
+                <summary>🔍 Debug Metrics</summary>
+                <ul style="font-size: 0.875rem; line-height: 1.6;">
+                    <li><strong>Text alone ratio:</strong> ${metrics.textAloneRatio || 'N/A'}</li>
+                    <li><strong>AI corpus ratio:</strong> ${metrics.corpusOnlyRatio || 'N/A'}</li>
+                    <li><strong>Seeded ratio:</strong> ${metrics.withAICorpusRatio || 'N/A'}</li>
+                    <li><strong>Expected ratio:</strong> ${metrics.expectedRatio || 'N/A'}</li>
+                    <li><strong>Difference:</strong> ${metrics.difference || 'N/A'} ${metrics.difference > 0 ? '(AI-like ↑)' : '(Human-like ↓)'}</li>
+                    <li><strong>Normalized:</strong> ${metrics.normalized || 'N/A'}</li>
+                    <li><strong>Soft-capped:</strong> ${metrics.softCapped || 'N/A'}</li>
+                    <li><strong>Raw score:</strong> ${metrics.rawScore || 'N/A'}</li>
+                    <li style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);"><strong>Text length:</strong> ${metrics.textLength || 'N/A'} chars</li>
                 </ul>
             </details>
         </div>
