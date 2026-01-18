@@ -880,12 +880,18 @@ async function analyzeImage() {
         displayImageResults(results);
         debugLog('Results displayed successfully');
 
+        // Show notification to scroll up
+        showSuccess('✓ Analysis complete! Results are displayed above. Scroll to the top to view them.');
+
         // Scroll to results
         setTimeout(() => {
-            document.getElementById('resultsSection').scrollIntoView({
+            debugLog('Attempting to scroll to results...');
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
             });
+            debugLog('Scroll command sent');
         }, 100);
 
     } catch (error) {
