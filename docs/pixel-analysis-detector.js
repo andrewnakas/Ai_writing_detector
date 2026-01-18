@@ -106,7 +106,8 @@ class PixelAnalysisDetector {
                 midFreqRatio: freqCharacteristics.midFreqRatio,
                 lowFreqRatio: freqCharacteristics.lowFreqRatio,
                 // Low variance suggests AI (more constant)
-                aiLikelihood: Math.max(0, 100 - (rioStdDev / rioMean) * 500)
+                // Reduced multiplier from 500 to 200 for more sensitive detection
+                aiLikelihood: Math.max(0, 100 - (rioStdDev / rioMean) * 200)
             };
 
         } catch (error) {
@@ -177,7 +178,8 @@ class PixelAnalysisDetector {
             homogeneity: homogeneity,
             entropy: entropy,
             // Lower entropy suggests AI
-            aiLikelihood: Math.max(0, 100 - (entropy / 8) * 100)
+            // Increased divisor from 8 to 10 for more sensitive detection
+            aiLikelihood: Math.max(0, 100 - (entropy / 10) * 100)
         };
     }
 
@@ -229,13 +231,16 @@ class PixelAnalysisDetector {
         let aiLikelihood = 0;
         if (avgNoise < 2) {
             // Too smooth - likely AI
-            aiLikelihood = 70;
+            aiLikelihood = 75;
+        } else if (avgNoise < 5) {
+            // Slightly smooth - possibly AI with added noise
+            aiLikelihood = 50;
         } else if (avgNoise > 15) {
             // Too noisy - might be added artificial noise
-            aiLikelihood = 40;
+            aiLikelihood = 45;
         } else {
-            // Natural noise range
-            aiLikelihood = 20;
+            // Natural noise range (but modern AI can fake this)
+            aiLikelihood = 30;
         }
 
         return {

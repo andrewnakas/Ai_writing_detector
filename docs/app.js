@@ -602,7 +602,7 @@ function toggleAllSigns() {
 
 function displayHighlightedText(results) {
     const container = document.getElementById('highlightedTextContainer');
-    const highlightedHtml = detector.highlightMatches(results.text, results.detections);
+    const highlightedHtml = patternDetector.highlightMatches(results.text, results.detections);
     container.innerHTML = highlightedHtml;
 }
 
@@ -622,7 +622,7 @@ function exportResults(format) {
     }
 
     try {
-        const exported = detector.exportResults(format);
+        const exported = patternDetector.exportResults(format);
         downloadFile(exported, `ai-detection-results.${format}`, format === 'json' ? 'application/json' : 'text/plain');
         showSuccess(`Results exported as ${format.toUpperCase()}`);
     } catch (error) {
@@ -638,7 +638,7 @@ function copyReport() {
     }
 
     try {
-        const report = detector.formatResultsAsText(currentResults);
+        const report = patternDetector.formatResultsAsText(currentResults);
         navigator.clipboard.writeText(report).then(() => {
             showSuccess('Report copied to clipboard!');
         }).catch(() => {
