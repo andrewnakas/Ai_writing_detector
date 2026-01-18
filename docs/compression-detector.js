@@ -118,15 +118,31 @@ Throughout history, technological advancements have been pivotal. As we can see,
         const expectedRatio = (corpusOnlyRatio * this.aiCorpus.length + textAloneRatio * text.length) / (this.aiCorpus.length + text.length);
         const difference = expectedRatio - seededRatio;
 
-        // Convert to 0-100 score
-        // Larger positive difference = more AI-like (compresses better with AI corpus)
-        const rawScore = Math.max(0, Math.min(100, (difference / 0.1) * 100));
+        // Convert to 0-100 score with better scaling
+        // Use sigmoid-like function to prevent maxing out too easily
+        // Adjusted divisor from 0.1 to 0.05 for more nuanced scoring
+        let rawScore;
+        if (difference > 0) {
+            // AI-like (compresses better with AI corpus)
+            // Scale more conservatively: divide by 0.05 gives range, then apply smoothing
+            const normalized = difference / 0.05;
+            // Apply soft cap using tanh-like function: x / (1 + |x|/2)
+            const softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            rawScore = 50 + (softCapped * 50);
+        } else {
+            // Human-like (compresses worse with AI corpus)
+            const normalized = Math.abs(difference) / 0.05;
+            const softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            rawScore = 50 - (softCapped * 50);
+        }
+
+        rawScore = Math.max(0, Math.min(100, Math.round(rawScore)));
 
         // Determine confidence based on text length and score magnitude
         let confidence = 'low';
-        if (text.length > 500 && Math.abs(rawScore - 50) > 20) {
+        if (text.length > 500 && Math.abs(rawScore - 50) > 25) {
             confidence = 'high';
-        } else if (text.length > 200 && Math.abs(rawScore - 50) > 10) {
+        } else if (text.length > 200 && Math.abs(rawScore - 50) > 15) {
             confidence = 'medium';
         }
 
