@@ -880,19 +880,43 @@ async function analyzeImage() {
         displayImageResults(results);
         debugLog('Results displayed successfully');
 
-        // Show notification to scroll up
-        showSuccess('✓ Analysis complete! Results are displayed above. Scroll to the top to view them.');
+        // Log the actual scores to debug console
+        debugLog('');
+        debugLog('========== ANALYSIS RESULTS ==========');
+        debugLog('PIXEL ANALYSIS SCORE:', results.pixelAnalysis.score + '/100');
+        debugLog('METADATA ANALYSIS SCORE:', results.metadataAnalysis.score + '/100');
+        debugLog('COMBINED SCORE:', results.combined.score + '/100');
+        debugLog('ASSESSMENT:', results.combined.assessment);
+        debugLog('CONFIDENCE:', results.combined.confidence);
+        debugLog('AGREEMENT:', results.combined.agreement);
+        debugLog('======================================');
+        debugLog('');
 
-        // Scroll to results
+        // Show notification to scroll up
+        showSuccess('✓ Analysis complete! Scores: Pixel=' + results.pixelAnalysis.score + ', Metadata=' + results.metadataAnalysis.score + ', Combined=' + results.combined.score);
+
+        // Scroll to results - force it to the top
         setTimeout(() => {
             debugLog('Attempting to scroll to results...');
             const resultsSection = document.getElementById('resultsSection');
+
+            // Log position info
+            const rect = resultsSection.getBoundingClientRect();
+            debugLog('Results section position - Top:', rect.top, 'Left:', rect.left, 'Visible:', rect.top >= 0 && rect.top <= window.innerHeight);
+            debugLog('Results section display:', window.getComputedStyle(resultsSection).display);
+            debugLog('Results section visibility:', window.getComputedStyle(resultsSection).visibility);
+
+            // Force scroll to top of page where results are
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            debugLog('Scrolled to top of page');
+
+            // Also try scrollIntoView
             resultsSection.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start'
             });
-            debugLog('Scroll command sent');
-        }, 100);
+            debugLog('scrollIntoView command sent');
+        }, 300);
 
     } catch (error) {
         debugLog('ERROR in image analysis:', error.message);
