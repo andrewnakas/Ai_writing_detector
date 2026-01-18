@@ -87,6 +87,17 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.toggle('active', content.id === `${tabName}Tab`);
     });
+
+    // Update analyze button text based on tab
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (tabName === 'image') {
+        analyzeBtn.innerHTML = '🔍 Analyze Image';
+    } else {
+        analyzeBtn.innerHTML = '🔍 Analyze Text';
+    }
+
+    // Hide results when switching tabs
+    document.getElementById('resultsSection').style.display = 'none';
 }
 
 function updateCharCount() {
@@ -100,10 +111,14 @@ function updateCharCount() {
 async function analyzeText() {
     // Check which tab is active
     const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+    console.log('Active tab:', activeTab);
 
     if (activeTab === 'image') {
+        console.log('Routing to image analysis');
         return analyzeImage();
     }
+
+    console.log('Routing to text analysis');
 
     // Text analysis
     const text = document.getElementById('textInput').value.trim();
@@ -229,6 +244,15 @@ function calculateCombinedScore(patternResults, compressionResults) {
 function displayResults(results) {
     // Show results section
     document.getElementById('resultsSection').style.display = 'block';
+
+    // Show text-specific sections (hide for image analysis)
+    const categoryCard = document.querySelector('#categoryScoresContainer').closest('.card');
+    const signsCard = document.querySelector('#detectedSignsContainer').closest('.card');
+    const highlightCard = document.querySelector('#highlightedTextContainer').closest('.card');
+
+    if (categoryCard) categoryCard.style.display = 'block';
+    if (signsCard) signsCard.style.display = 'block';
+    if (highlightCard) highlightCard.style.display = 'block';
 
     // Display overall combined score
     displayOverallScore(results);
@@ -771,6 +795,9 @@ function handleFileSelection(file) {
 }
 
 async function analyzeImage() {
+    console.log('analyzeImage() called');
+    console.log('currentImageFile:', currentImageFile);
+
     if (!currentImageFile) {
         showError('Please upload an image first.');
         return;
@@ -784,6 +811,8 @@ async function analyzeImage() {
 
     try {
         console.log('Starting image analysis...');
+        console.log('imageVideoDetector:', imageVideoDetector);
+
         const results = await imageVideoDetector.analyzeImage(currentImageFile);
 
         console.log('Image analysis complete:', results);
@@ -803,6 +832,7 @@ async function analyzeImage() {
 
     } catch (error) {
         console.error('Image analysis error:', error);
+        console.error('Error stack:', error.stack);
         showError('An error occurred during image analysis: ' + error.message);
     } finally {
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -812,6 +842,8 @@ async function analyzeImage() {
 }
 
 function displayImageResults(results) {
+    console.log('displayImageResults called with:', results);
+
     // Show results section
     document.getElementById('resultsSection').style.display = 'block';
 
@@ -822,9 +854,15 @@ function displayImageResults(results) {
     displayImageDetectionMethods(results);
 
     // Hide text-specific sections
-    document.getElementById('categoryScoresContainer').closest('.card').style.display = 'none';
-    document.getElementById('detectedSignsContainer').closest('.card').style.display = 'none';
-    document.getElementById('highlightedTextContainer').closest('.card').style.display = 'none';
+    const categoryCard = document.getElementById('categoryScoresContainer')?.closest('.card');
+    const signsCard = document.getElementById('detectedSignsContainer')?.closest('.card');
+    const highlightCard = document.getElementById('highlightedTextContainer')?.closest('.card');
+
+    if (categoryCard) categoryCard.style.display = 'none';
+    if (signsCard) signsCard.style.display = 'none';
+    if (highlightCard) highlightCard.style.display = 'none';
+
+    console.log('Image results displayed successfully');
 }
 
 function displayImageOverallScore(results) {
