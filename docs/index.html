@@ -26,6 +26,7 @@
                 <div class="tabs">
                     <button class="tab-button active" data-tab="text">📝 Paste Text</button>
                     <button class="tab-button" data-tab="url">🔗 Enter URL</button>
+                    <button class="tab-button" data-tab="image">🖼️ Upload Image/Video</button>
                 </div>
 
                 <div id="textTab" class="tab-content active">
@@ -56,6 +57,42 @@
                         <br><br>
                         <em>For developers: A backend proxy service would be needed to enable this feature.</em>
                     </p>
+                </div>
+
+                <div id="imageTab" class="tab-content">
+                    <div class="file-upload-area">
+                        <input
+                            type="file"
+                            id="imageFileInput"
+                            accept="image/jpeg,image/jpg,image/png,image/webp,video/*"
+                            style="display: none;"
+                        >
+                        <div id="dropZone" class="drop-zone">
+                            <div class="drop-zone-content">
+                                <span class="drop-zone-icon">🖼️</span>
+                                <h3>Upload Image or Video</h3>
+                                <p>Drag and drop a file here, or click to browse</p>
+                                <p class="file-info">Supported: JPEG, PNG, WebP (Max 50MB)</p>
+                                <p class="file-info-note">Video detection coming soon!</p>
+                            </div>
+                        </div>
+                        <div id="filePreviewContainer" style="display: none;">
+                            <div id="filePreview" class="file-preview"></div>
+                            <button id="removeFileBtn" class="button button-secondary">🗑️ Remove File</button>
+                        </div>
+                    </div>
+                    <div class="detection-info-box">
+                        <h4>🔬 Detection Methods</h4>
+                        <ul>
+                            <li><strong>Pixel Analysis:</strong> FFT frequency domain, texture patterns, noise characteristics</li>
+                            <li><strong>Metadata Analysis:</strong> EXIF data, AI generation markers, provenance checks</li>
+                            <li><strong>Frequency Fingerprinting:</strong> Spectral signatures unique to AI generators</li>
+                        </ul>
+                        <p class="info-note">
+                            <strong>Note:</strong> Detection analyzes patterns typical of AI generators like DALL-E, Midjourney,
+                            Stable Diffusion, Firefly, and others. Results are probabilistic, not definitive.
+                        </p>
+                    </div>
                 </div>
 
                 <div class="action-buttons">
@@ -207,6 +244,10 @@
 
     <script src="detector.js"></script>
     <script src="compression-detector.js"></script>
+    <script src="fft-analyzer.js"></script>
+    <script src="metadata-detector.js"></script>
+    <script src="pixel-analysis-detector.js"></script>
+    <script src="image-video-detector.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

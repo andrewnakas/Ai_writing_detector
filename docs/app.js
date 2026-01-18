@@ -2,16 +2,20 @@
 
 let patternDetector;
 let compressionDetector;
+let imageVideoDetector;
 let currentResults = null;
+let currentImageFile = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Initialize both detectors
+        // Initialize all detectors
         patternDetector = new AIWritingDetector();
         await patternDetector.initialize();
 
         compressionDetector = new CompressionDetector();
+
+        imageVideoDetector = new ImageVideoDetector();
 
         // Update UI with metadata
         updateMetadataUI();
@@ -68,6 +72,9 @@ function setupEventListeners() {
 
     // Toggle all signs
     document.getElementById('toggleAllSigns').addEventListener('click', toggleAllSigns);
+
+    // Image/Video upload
+    setupImageUploadListeners();
 }
 
 function switchTab(tabName) {
@@ -91,6 +98,14 @@ function updateCharCount() {
 }
 
 async function analyzeText() {
+    // Check which tab is active
+    const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+
+    if (activeTab === 'image') {
+        return analyzeImage();
+    }
+
+    // Text analysis
     const text = document.getElementById('textInput').value.trim();
 
     if (!text) {
@@ -662,6 +677,311 @@ function showNotification(message, type = 'info') {
         notification.classList.remove('show');
         setTimeout(() => document.body.removeChild(notification), 300);
     }, 3000);
+}
+
+// Image/Video Upload Functions
+
+function setupImageUploadListeners() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('imageFileInput');
+    const removeBtn = document.getElementById('removeFileBtn');
+
+    // Click to browse
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // File selection
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileSelection(e.dataTransfer.files[0]);
+        }
+    });
+
+    // Remove file
+    removeBtn.addEventListener('click', () => {
+        currentImageFile = null;
+        document.getElementById('dropZone').style.display = 'flex';
+        document.getElementById('filePreviewContainer').style.display = 'none';
+        document.getElementById('filePreview').innerHTML = '';
+        fileInput.value = '';
+        document.getElementById('resultsSection').style.display = 'none';
+    });
+}
+
+function handleFileSelection(file) {
+    currentImageFile = file;
+
+    // Validate file
+    const validation = imageVideoDetector.validateFile(file);
+    if (!validation.valid) {
+        showError(validation.error);
+        return;
+    }
+
+    // Show preview
+    const dropZone = document.getElementById('dropZone');
+    const previewContainer = document.getElementById('filePreviewContainer');
+    const preview = document.getElementById('filePreview');
+
+    dropZone.style.display = 'none';
+    previewContainer.style.display = 'block';
+
+    if (validation.isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.innerHTML = `
+                <img src="${e.target.result}" alt="Preview">
+                <div class="file-preview-info">
+                    <strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else if (validation.isVideo) {
+        preview.innerHTML = `
+            <div class="file-preview-info">
+                <span style="font-size: 3rem;">🎥</span><br>
+                <strong>${file.name}</strong> (${(file.size / (1024 * 1024)).toFixed(2)} MB)<br>
+                <em>Video detection coming soon!</em>
+            </div>
+        `;
+    }
+
+    showSuccess('File loaded! Click "Analyze" to detect AI generation.');
+}
+
+async function analyzeImage() {
+    if (!currentImageFile) {
+        showError('Please upload an image first.');
+        return;
+    }
+
+    // Show loading
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    loadingIndicator.style.display = 'block';
+    loadingIndicator.querySelector('p').textContent = 'Analyzing image (FFT, metadata, pixel patterns)...';
+    document.getElementById('resultsSection').style.display = 'none';
+
+    try {
+        console.log('Starting image analysis...');
+        const results = await imageVideoDetector.analyzeImage(currentImageFile);
+
+        console.log('Image analysis complete:', results);
+
+        currentResults = results;
+
+        // Display results
+        displayImageResults(results);
+
+        // Scroll to results
+        setTimeout(() => {
+            document.getElementById('resultsSection').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 100);
+
+    } catch (error) {
+        console.error('Image analysis error:', error);
+        showError('An error occurred during image analysis: ' + error.message);
+    } finally {
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        loadingIndicator.style.display = 'none';
+        loadingIndicator.querySelector('p').textContent = 'Analyzing text...';
+    }
+}
+
+function displayImageResults(results) {
+    // Show results section
+    document.getElementById('resultsSection').style.display = 'block';
+
+    // Display overall score
+    displayImageOverallScore(results);
+
+    // Display detection methods
+    displayImageDetectionMethods(results);
+
+    // Hide text-specific sections
+    document.getElementById('categoryScoresContainer').closest('.card').style.display = 'none';
+    document.getElementById('detectedSignsContainer').closest('.card').style.display = 'none';
+    document.getElementById('highlightedTextContainer').closest('.card').style.display = 'none';
+}
+
+function displayImageOverallScore(results) {
+    const scoreValue = document.getElementById('scoreValue');
+    const scoreCircle = document.getElementById('scoreCircle');
+    const scoreSummary = document.getElementById('scoreSummary');
+    const confidenceLevel = document.getElementById('confidenceLevel');
+    const detectionCount = document.getElementById('detectionCount');
+
+    const combinedScore = results.combined.score;
+
+    // Animate score
+    animateScore(scoreValue, combinedScore);
+
+    // Update score circle color
+    scoreCircle.className = 'score-circle';
+    if (combinedScore >= 70) {
+        scoreCircle.classList.add('score-very-high');
+    } else if (combinedScore >= 50) {
+        scoreCircle.classList.add('score-high');
+    } else if (combinedScore >= 30) {
+        scoreCircle.classList.add('score-medium');
+    } else {
+        scoreCircle.classList.add('score-low');
+    }
+
+    scoreSummary.textContent = `${results.combined.assessment}. ${results.combined.agreement}`;
+
+    // Update metadata
+    confidenceLevel.textContent = `Combined Confidence: ${results.combined.confidence}`;
+    detectionCount.textContent = `${results.imageInfo.dimensions.width}×${results.imageInfo.dimensions.height} · ${(results.imageInfo.fileSize / 1024).toFixed(1)} KB`;
+}
+
+function displayImageDetectionMethods(results) {
+    const container = document.getElementById('detectionMethodsContainer');
+
+    const pixelResults = results.pixelAnalysis || {};
+    const metadataResults = results.metadataAnalysis || {};
+    const combinedResults = results.combined || {};
+
+    container.innerHTML = `
+        <div class="image-display-container">
+            <img src="${results.imageElement.src}" alt="Analyzed Image" class="analyzed-image">
+        </div>
+
+        <div class="method-card">
+            <div class="method-header">
+                <span class="method-icon">🔬</span>
+                <h4>Pixel Analysis</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score">${pixelResults.score || 0}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Confidence: ${pixelResults.confidence || 'unknown'}</p>
+            <p class="method-description">${pixelResults.explanation || 'No explanation available'}</p>
+            ${pixelResults.details ? `
+                <details class="method-details">
+                    <summary>🔍 Technical Details</summary>
+                    <div style="font-size: 0.875rem; line-height: 1.6;">
+                        ${pixelResults.details.reasons && pixelResults.details.reasons.length > 0 ? `
+                            <strong>Detected patterns:</strong>
+                            <ul style="margin: 0.5rem 0;">
+                                ${pixelResults.details.reasons.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        ${pixelResults.details.frequency && !pixelResults.details.frequency.error ? `
+                            <p><strong>Frequency Analysis:</strong></p>
+                            <ul style="margin: 0.5rem 0;">
+                                <li>High freq ratio: ${(pixelResults.details.frequency.highFreqRatio * 100).toFixed(1)}%</li>
+                                <li>RIO std dev: ${pixelResults.details.frequency.rioStdDev.toFixed(4)}</li>
+                                <li>AI likelihood: ${pixelResults.details.frequency.aiLikelihood.toFixed(1)}%</li>
+                            </ul>
+                        ` : ''}
+                        ${pixelResults.details.texture ? `
+                            <p><strong>Texture Analysis:</strong></p>
+                            <ul style="margin: 0.5rem 0;">
+                                <li>Entropy: ${pixelResults.details.texture.entropy.toFixed(2)}</li>
+                                <li>Contrast: ${pixelResults.details.texture.contrast.toFixed(1)}</li>
+                                <li>Homogeneity: ${pixelResults.details.texture.homogeneity.toFixed(3)}</li>
+                            </ul>
+                        ` : ''}
+                        ${pixelResults.details.noise ? `
+                            <p><strong>Noise Analysis:</strong></p>
+                            <ul style="margin: 0.5rem 0;">
+                                <li>Avg noise: ${pixelResults.details.noise.avgNoise.toFixed(2)}</li>
+                            </ul>
+                        ` : ''}
+                    </div>
+                </details>
+            ` : ''}
+        </div>
+
+        <div class="method-card">
+            <div class="method-header">
+                <span class="method-icon">📋</span>
+                <h4>Metadata Analysis</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score">${metadataResults.score || 0}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Confidence: ${metadataResults.confidence || 'unknown'}</p>
+            <p class="method-description">${metadataResults.explanation || 'No explanation available'}</p>
+            ${metadataResults.details ? `
+                <details class="method-details">
+                    <summary>🔍 Metadata Details</summary>
+                    <div style="font-size: 0.875rem; line-height: 1.6;">
+                        <ul style="margin: 0.5rem 0;">
+                            <li><strong>File type:</strong> ${metadataResults.details.fileType}</li>
+                            <li><strong>Has EXIF:</strong> ${metadataResults.details.hasEXIF ? 'Yes' : 'No'}</li>
+                            <li><strong>Has text chunks:</strong> ${metadataResults.details.hasTextChunks ? 'Yes' : 'No'}</li>
+                            ${metadataResults.details.software ? `<li><strong>Software:</strong> ${metadataResults.details.software}</li>` : ''}
+                            ${metadataResults.details.make ? `<li><strong>Camera make:</strong> ${metadataResults.details.make}</li>` : ''}
+                            ${metadataResults.details.model ? `<li><strong>Camera model:</strong> ${metadataResults.details.model}</li>` : ''}
+                        </ul>
+                        ${metadataResults.details.aiMarkers && metadataResults.details.aiMarkers.length > 0 ? `
+                            <p style="margin-top: 1rem;"><strong>🚨 AI Generator Markers Found:</strong></p>
+                            <ul style="margin: 0.5rem 0; color: var(--danger-color);">
+                                ${metadataResults.details.aiMarkers.map(m => `<li>${m}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                        ${metadataResults.details.reasons && metadataResults.details.reasons.length > 0 ? `
+                            <p style="margin-top: 1rem;"><strong>Analysis findings:</strong></p>
+                            <ul style="margin: 0.5rem 0;">
+                                ${metadataResults.details.reasons.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                    </div>
+                </details>
+            ` : ''}
+        </div>
+
+        <div class="method-card method-card-combined">
+            <div class="method-header">
+                <span class="method-icon">⚖️</span>
+                <h4>Combined Score</h4>
+            </div>
+            <div class="method-score-display">
+                <div class="method-score method-score-combined">${combinedResults.score}</div>
+                <div class="method-score-label">/100</div>
+            </div>
+            <p class="method-confidence">Overall: ${combinedResults.confidence}</p>
+            <p class="method-agreement">${combinedResults.agreement}</p>
+            <p class="method-description">Weighted average: 60% pixel analysis, 40% metadata analysis.</p>
+            <details class="method-details">
+                <summary>🔍 Score Breakdown</summary>
+                <div style="font-size: 0.875rem; line-height: 1.6;">
+                    <ul style="margin: 0.5rem 0;">
+                        <li>Pixel analysis score: ${combinedResults.breakdown.pixelScore}</li>
+                        <li>Metadata score: ${combinedResults.breakdown.metadataScore}</li>
+                        <li>Score difference: ${combinedResults.scoreDifference}</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+    `;
 }
 
 // Utility function for legend toggle (called from HTML)

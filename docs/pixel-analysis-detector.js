@@ -1,0 +1,384 @@
+// Pixel-level analysis detector for AI-generated images
+// Uses frequency domain analysis, texture features, and noise patterns
+
+class PixelAnalysisDetector {
+    constructor() {
+        this.fftAnalyzer = new FFTAnalyzer();
+    }
+
+    async analyze(imageElement, file) {
+        try {
+            // Create canvas and get image data
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = imageElement.naturalWidth;
+            canvas.height = imageElement.naturalHeight;
+            ctx.drawImage(imageElement, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Downsample for performance (max 512x512)
+            const maxSize = 512;
+            let analysisWidth = canvas.width;
+            let analysisHeight = canvas.height;
+
+            if (canvas.width > maxSize || canvas.height > maxSize) {
+                const scale = maxSize / Math.max(canvas.width, canvas.height);
+                analysisWidth = Math.floor(canvas.width * scale);
+                analysisHeight = Math.floor(canvas.height * scale);
+
+                const smallCanvas = document.createElement('canvas');
+                const smallCtx = smallCanvas.getContext('2d');
+                smallCanvas.width = analysisWidth;
+                smallCanvas.height = analysisHeight;
+                smallCtx.drawImage(imageElement, 0, 0, analysisWidth, analysisHeight);
+
+                const smallImageData = smallCtx.getImageData(0, 0, analysisWidth, analysisHeight);
+                return this.performAnalysis(smallImageData.data, analysisWidth, analysisHeight, file);
+            }
+
+            return this.performAnalysis(imageData.data, analysisWidth, analysisHeight, file);
+
+        } catch (error) {
+            console.error('Pixel analysis error:', error);
+            return {
+                method: 'Pixel Analysis',
+                score: 0,
+                confidence: 'low',
+                explanation: 'Unable to perform pixel analysis: ' + error.message,
+                details: {}
+            };
+        }
+    }
+
+    performAnalysis(pixelData, width, height, file) {
+        const features = {};
+
+        // 1. Frequency domain analysis (FFT)
+        console.log('Computing FFT...');
+        features.frequency = this.analyzeFrequencyDomain(pixelData, width, height);
+
+        // 2. Texture analysis (GLCM-inspired)
+        console.log('Analyzing texture...');
+        features.texture = this.analyzeTexture(pixelData, width, height);
+
+        // 3. Noise pattern analysis
+        console.log('Analyzing noise...');
+        features.noise = this.analyzeNoise(pixelData, width, height);
+
+        // 4. Color distribution analysis
+        console.log('Analyzing color distribution...');
+        features.color = this.analyzeColorDistribution(pixelData, width, height);
+
+        // Calculate combined score
+        return this.calculateScore(features, file);
+    }
+
+    analyzeFrequencyDomain(pixelData, width, height) {
+        try {
+            // Perform 2D FFT
+            const fftResult = this.fftAnalyzer.fft2D(pixelData, width, height);
+            const magnitudeSpectrum = this.fftAnalyzer.getMagnitudeSpectrum(fftResult);
+
+            // Compute RIO (Radial Integral Operation)
+            const rioValues = this.fftAnalyzer.computeRIO(magnitudeSpectrum);
+
+            // Compute variance of RIO values
+            // AI images tend to have constant RIO, real images have fluctuations
+            const rioMean = rioValues.reduce((a, b) => a + b, 0) / rioValues.length;
+            const rioVariance = rioValues.reduce((sum, val) => sum + Math.pow(val - rioMean, 2), 0) / rioValues.length;
+            const rioStdDev = Math.sqrt(rioVariance);
+
+            // Get frequency characteristics
+            const freqCharacteristics = this.fftAnalyzer.analyzeFrequencyCharacteristics(magnitudeSpectrum);
+
+            // AI images often have:
+            // - Low RIO variance (constant spectral signature)
+            // - Higher high-frequency content
+            // - Distinct periodic patterns
+
+            return {
+                rioVariance: rioVariance,
+                rioStdDev: rioStdDev,
+                rioValues: rioValues,
+                highFreqRatio: freqCharacteristics.highFreqRatio,
+                midFreqRatio: freqCharacteristics.midFreqRatio,
+                lowFreqRatio: freqCharacteristics.lowFreqRatio,
+                // Low variance suggests AI (more constant)
+                aiLikelihood: Math.max(0, 100 - (rioStdDev / rioMean) * 500)
+            };
+
+        } catch (error) {
+            console.warn('FFT analysis failed:', error);
+            return {
+                rioVariance: 0,
+                rioStdDev: 0,
+                highFreqRatio: 0,
+                aiLikelihood: 0,
+                error: error.message
+            };
+        }
+    }
+
+    analyzeTexture(pixelData, width, height) {
+        // Simplified GLCM-inspired texture analysis
+        let contrast = 0;
+        let energy = 0;
+        let homogeneity = 0;
+        let entropy = 0;
+
+        const histogram = new Array(256).fill(0);
+
+        // Sample pixels (not full GLCM for performance)
+        const sampleRate = 4; // Sample every 4th pixel
+        let sampleCount = 0;
+
+        for (let y = 0; y < height - 1; y += sampleRate) {
+            for (let x = 0; x < width - 1; x += sampleRate) {
+                const idx = (y * width + x) * 4;
+                const gray1 = Math.floor((pixelData[idx] + pixelData[idx + 1] + pixelData[idx + 2]) / 3);
+
+                const idx2 = (y * width + (x + 1)) * 4;
+                const gray2 = Math.floor((pixelData[idx2] + pixelData[idx2 + 1] + pixelData[idx2 + 2]) / 3);
+
+                const diff = Math.abs(gray1 - gray2);
+
+                contrast += diff * diff;
+                energy += gray1 * gray1;
+                homogeneity += 1 / (1 + diff);
+
+                histogram[gray1]++;
+                sampleCount++;
+            }
+        }
+
+        // Normalize
+        contrast /= sampleCount;
+        energy /= sampleCount;
+        homogeneity /= sampleCount;
+
+        // Calculate entropy
+        for (let i = 0; i < 256; i++) {
+            if (histogram[i] > 0) {
+                const p = histogram[i] / sampleCount;
+                entropy -= p * Math.log2(p);
+            }
+        }
+
+        // AI images often have:
+        // - Lower entropy (more uniform)
+        // - Higher energy (smoother gradients)
+        // - Lower contrast (less texture variation)
+
+        return {
+            contrast: contrast,
+            energy: energy,
+            homogeneity: homogeneity,
+            entropy: entropy,
+            // Lower entropy suggests AI
+            aiLikelihood: Math.max(0, 100 - (entropy / 8) * 100)
+        };
+    }
+
+    analyzeNoise(pixelData, width, height) {
+        // Analyze noise patterns - AI images have different noise characteristics
+        let noiseSum = 0;
+        let noiseCount = 0;
+
+        const sampleRate = 3;
+
+        for (let y = 1; y < height - 1; y += sampleRate) {
+            for (let x = 1; x < width - 1; x += sampleRate) {
+                const idx = (y * width + x) * 4;
+
+                // Get center pixel
+                const centerR = pixelData[idx];
+                const centerG = pixelData[idx + 1];
+                const centerB = pixelData[idx + 2];
+
+                // Get neighbor average
+                let neighborSum = 0;
+                let neighborCount = 0;
+
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+
+                        const nIdx = ((y + dy) * width + (x + dx)) * 4;
+                        neighborSum += pixelData[nIdx] + pixelData[nIdx + 1] + pixelData[nIdx + 2];
+                        neighborCount += 3;
+                    }
+                }
+
+                const neighborAvg = neighborSum / neighborCount;
+                const centerAvg = (centerR + centerG + centerB) / 3;
+
+                // Calculate local variance (noise indicator)
+                noiseSum += Math.abs(centerAvg - neighborAvg);
+                noiseCount++;
+            }
+        }
+
+        const avgNoise = noiseSum / noiseCount;
+
+        // AI images often have:
+        // - Very low noise (too smooth)
+        // - Or artificial noise patterns
+
+        let aiLikelihood = 0;
+        if (avgNoise < 2) {
+            // Too smooth - likely AI
+            aiLikelihood = 70;
+        } else if (avgNoise > 15) {
+            // Too noisy - might be added artificial noise
+            aiLikelihood = 40;
+        } else {
+            // Natural noise range
+            aiLikelihood = 20;
+        }
+
+        return {
+            avgNoise: avgNoise,
+            aiLikelihood: aiLikelihood
+        };
+    }
+
+    analyzeColorDistribution(pixelData, width, height) {
+        const rHist = new Array(256).fill(0);
+        const gHist = new Array(256).fill(0);
+        const bHist = new Array(256).fill(0);
+
+        let pixelCount = 0;
+
+        for (let i = 0; i < pixelData.length; i += 4) {
+            rHist[pixelData[i]]++;
+            gHist[pixelData[i + 1]]++;
+            bHist[pixelData[i + 2]]++;
+            pixelCount++;
+        }
+
+        // Calculate histogram smoothness
+        const rSmoothness = this.calculateHistogramSmoothness(rHist);
+        const gSmoothness = this.calculateHistogramSmoothness(gHist);
+        const bSmoothness = this.calculateHistogramSmoothness(bHist);
+
+        const avgSmoothness = (rSmoothness + gSmoothness + bSmoothness) / 3;
+
+        // AI images often have smoother, more uniform color distributions
+        const aiLikelihood = Math.min(100, avgSmoothness * 80);
+
+        return {
+            rSmoothness: rSmoothness,
+            gSmoothness: gSmoothness,
+            bSmoothness: bSmoothness,
+            avgSmoothness: avgSmoothness,
+            aiLikelihood: aiLikelihood
+        };
+    }
+
+    calculateHistogramSmoothness(histogram) {
+        let smoothness = 0;
+        let count = 0;
+
+        for (let i = 1; i < histogram.length; i++) {
+            const diff = Math.abs(histogram[i] - histogram[i - 1]);
+            smoothness += 1 / (1 + diff);
+            count++;
+        }
+
+        return smoothness / count;
+    }
+
+    calculateScore(features, file) {
+        // Weight different features
+        const weights = {
+            frequency: 0.35,
+            texture: 0.25,
+            noise: 0.25,
+            color: 0.15
+        };
+
+        let weightedScore = 0;
+        let confidence = 'low';
+        let reasons = [];
+
+        // Frequency domain
+        if (features.frequency && !features.frequency.error) {
+            const freqScore = features.frequency.aiLikelihood;
+            weightedScore += freqScore * weights.frequency;
+
+            if (features.frequency.rioStdDev < features.frequency.rioValues[0] * 0.1) {
+                reasons.push('Constant frequency spectrum (typical of AI generators)');
+            }
+
+            if (features.frequency.highFreqRatio > 0.3) {
+                reasons.push('High frequency content elevated (GAN/diffusion artifact)');
+            }
+        }
+
+        // Texture
+        if (features.texture) {
+            const textureScore = features.texture.aiLikelihood;
+            weightedScore += textureScore * weights.texture;
+
+            if (features.texture.entropy < 6.5) {
+                reasons.push('Low texture entropy (unnaturally uniform)');
+            }
+        }
+
+        // Noise
+        if (features.noise) {
+            const noiseScore = features.noise.aiLikelihood;
+            weightedScore += noiseScore * weights.noise;
+
+            if (features.noise.avgNoise < 2) {
+                reasons.push('Suspiciously low noise level (over-smoothed)');
+            }
+        }
+
+        // Color
+        if (features.color) {
+            const colorScore = features.color.aiLikelihood;
+            weightedScore += colorScore * weights.color;
+
+            if (features.color.avgSmoothness > 0.9) {
+                reasons.push('Highly uniform color distribution');
+            }
+        }
+
+        const finalScore = Math.round(Math.min(100, Math.max(0, weightedScore)));
+
+        // Determine confidence
+        if (finalScore >= 70) confidence = 'high';
+        else if (finalScore >= 50) confidence = 'medium';
+        else if (finalScore >= 30) confidence = 'low';
+        else confidence = 'very-low';
+
+        return {
+            method: 'Pixel Analysis',
+            score: finalScore,
+            confidence: confidence,
+            explanation: this.generateExplanation(finalScore),
+            details: {
+                frequency: features.frequency,
+                texture: features.texture,
+                noise: features.noise,
+                color: features.color,
+                reasons: reasons
+            }
+        };
+    }
+
+    generateExplanation(score) {
+        if (score >= 70) {
+            return 'Pixel-level analysis shows strong AI generation signatures in frequency and texture patterns';
+        } else if (score >= 50) {
+            return 'Moderate AI-like characteristics detected in pixel analysis';
+        } else if (score >= 30) {
+            return 'Some AI-consistent patterns found, but results are mixed';
+        } else {
+            return 'Pixel analysis suggests authentic image characteristics';
+        }
+    }
+}
