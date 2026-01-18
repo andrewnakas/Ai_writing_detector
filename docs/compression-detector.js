@@ -118,21 +118,21 @@ Throughout history, technological advancements have been pivotal. As we can see,
         const expectedRatio = (corpusOnlyRatio * this.aiCorpus.length + textAloneRatio * text.length) / (this.aiCorpus.length + text.length);
         const difference = expectedRatio - seededRatio;
 
-        // Convert to 0-100 score with better scaling
-        // Use sigmoid-like function to prevent maxing out too easily
-        // Adjusted divisor from 0.1 to 0.05 for more nuanced scoring
+        // Convert to 0-100 score with proper sigmoid scaling
+        // Use actual tanh function for strong soft-capping
+        // Divisor of 0.4 provides good distribution for typical differences
         let rawScore, normalized, softCapped;
         if (difference > 0) {
             // AI-like (compresses better with AI corpus)
-            // Scale more conservatively: divide by 0.05 gives range, then apply smoothing
-            normalized = difference / 0.05;
-            // Apply soft cap using tanh-like function: x / (1 + |x|/2)
-            softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            // Normalize difference, then apply tanh for proper sigmoid curve
+            normalized = difference / 0.4;
+            // Use actual hyperbolic tangent for smooth 0-1 mapping
+            softCapped = Math.tanh(normalized);
             rawScore = 50 + (softCapped * 50);
         } else {
             // Human-like (compresses worse with AI corpus)
-            normalized = Math.abs(difference) / 0.05;
-            softCapped = normalized / (1 + Math.abs(normalized) / 2);
+            normalized = Math.abs(difference) / 0.4;
+            softCapped = Math.tanh(normalized);
             rawScore = 50 - (softCapped * 50);
         }
 

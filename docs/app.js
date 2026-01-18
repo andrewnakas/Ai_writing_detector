@@ -278,18 +278,18 @@ function displayDetectionMethods(results) {
             <p class="method-confidence">Confidence: ${compressionConfidence}</p>
             <p class="method-description">${compressionExplanation}</p>
             <details class="method-details" open>
-                <summary>🔍 Debug Metrics</summary>
-                <ul style="font-size: 0.875rem; line-height: 1.6;">
-                    <li><strong>Text alone ratio:</strong> ${metrics.textAloneRatio || 'N/A'}</li>
-                    <li><strong>AI corpus ratio:</strong> ${metrics.corpusOnlyRatio || 'N/A'}</li>
-                    <li><strong>Seeded ratio:</strong> ${metrics.withAICorpusRatio || 'N/A'}</li>
-                    <li><strong>Expected ratio:</strong> ${metrics.expectedRatio || 'N/A'}</li>
-                    <li><strong>Difference:</strong> ${metrics.difference || 'N/A'} ${metrics.difference > 0 ? '(AI-like ↑)' : '(Human-like ↓)'}</li>
-                    <li><strong>Normalized:</strong> ${metrics.normalized || 'N/A'}</li>
-                    <li><strong>Soft-capped:</strong> ${metrics.softCapped || 'N/A'}</li>
-                    <li><strong>Raw score:</strong> ${metrics.rawScore || 'N/A'}</li>
-                    <li style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);"><strong>Text length:</strong> ${metrics.textLength || 'N/A'} chars</li>
-                </ul>
+                <summary>🔍 Debug Metrics (tap to copy)</summary>
+                <textarea readonly class="debug-console" rows="11" style="width: 100%; font-family: monospace; font-size: 0.75rem; padding: 0.5rem; margin-top: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-tertiary); resize: vertical;">Text alone ratio: ${metrics.textAloneRatio || 'N/A'}
+AI corpus ratio: ${metrics.corpusOnlyRatio || 'N/A'}
+Seeded ratio: ${metrics.withAICorpusRatio || 'N/A'}
+Expected ratio: ${metrics.expectedRatio || 'N/A'}
+Difference: ${metrics.difference || 'N/A'} ${metrics.difference > 0 ? '(AI-like)' : '(Human-like)'}
+Normalized: ${metrics.normalized || 'N/A'}
+Soft-capped: ${metrics.softCapped || 'N/A'}
+Raw score: ${metrics.rawScore || 'N/A'}
+Text length: ${metrics.textLength || 'N/A'} chars
+
+Tap anywhere in this box to select all and copy</textarea>
             </details>
         </div>
 
