@@ -267,11 +267,28 @@
         </footer>
     </div>
 
+    <!-- Transformers.js for browser-based AI model inference -->
+    <script type="module">
+        // Import Transformers.js v3 (latest version with WebGPU support)
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
+
+        // Configure for browser usage
+        env.allowLocalModels = false;
+        env.allowRemoteModels = true;
+
+        // Make pipeline available globally
+        window.pipeline = pipeline;
+        window.transformersEnv = env;
+
+        console.log('✓ Transformers.js loaded and ready');
+    </script>
+
     <script src="detector.js"></script>
     <script src="compression-detector.js"></script>
     <script src="fft-analyzer.js"></script>
     <script src="metadata-detector.js"></script>
     <script src="pixel-analysis-detector.js"></script>
+    <script src="ai-model-detector.js"></script>
     <script src="image-video-detector.js"></script>
     <script src="app.js"></script>
 </body>

@@ -1031,92 +1031,305 @@ function displayImageResults(results) {
 function generateInlineImageResults(results) {
     const pixel = results.pixelAnalysis || {};
     const metadata = results.metadataAnalysis || {};
+    const aiModel = results.aiModelAnalysis || {};
     const combined = results.combined || {};
     const imageInfo = results.imageInfo || {};
 
+    // Determine score color
+    const getScoreColor = (score) => {
+        if (score >= 70) return 'var(--danger-color)';
+        if (score >= 50) return '#ff9800';
+        if (score >= 30) return '#ffc107';
+        return 'var(--success-color)';
+    };
+
+    // Generate pixel sub-methods breakdown
+    const pixelDetails = pixel.details || {};
+    const generatePixelSubMethods = () => {
+        if (!pixelDetails) return '';
+
+        const methods = [
+            { name: 'Upsampling Artifacts', data: pixelDetails.upsampling, icon: '🔄', weight: '30%' },
+            { name: 'Frequency Analysis (FFT)', data: pixelDetails.frequency, icon: '📊', weight: '25%' },
+            { name: 'Checkerboard Patterns', data: pixelDetails.checkerboard, icon: '🏁', weight: '15%' },
+            { name: 'Texture Analysis', data: pixelDetails.texture, icon: '🎨', weight: '15%' },
+            { name: 'Noise Analysis', data: pixelDetails.noise, icon: '🌫️', weight: '10%' },
+            { name: 'Color Distribution', data: pixelDetails.color, icon: '🌈', weight: '5%' }
+        ];
+
+        return methods.map(method => {
+            if (!method.data) return '';
+            const score = method.data.aiLikelihood || 0;
+            return `
+                <div style="background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600;">${method.icon} ${method.name}</span>
+                        <span style="font-size: 1.25rem; font-weight: bold; color: ${getScoreColor(score)};">${Math.round(score)}</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Weight: ${method.weight}</div>
+                    ${generateMethodDetails(method.name, method.data)}
+                </div>
+            `;
+        }).join('');
+    };
+
+    // Generate detailed info for each detection method
+    const generateMethodDetails = (methodName, data) => {
+        if (!data) return '';
+
+        switch(methodName) {
+            case 'Upsampling Artifacts':
+                return data.duplicateRatio ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Duplicate pixel ratio: ${(data.duplicateRatio * 100).toFixed(2)}%
+                        ${data.duplicateRatio > 0.15 ? '<br><span style="color: var(--danger-color);">⚠️ High upsampling detected</span>' : ''}
+                    </div>
+                ` : '';
+
+            case 'Frequency Analysis (FFT)':
+                return data.rioStdDev !== undefined ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        RIO variance: ${data.rioVariance?.toFixed(4) || 'N/A'}<br>
+                        High freq ratio: ${(data.highFreqRatio * 100).toFixed(1)}%
+                    </div>
+                ` : '';
+
+            case 'Checkerboard Patterns':
+                return data.checkerboardRatio !== undefined ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Pattern ratio: ${(data.checkerboardRatio * 100).toFixed(2)}%
+                        ${data.checkerboardRatio > 0.05 ? '<br><span style="color: var(--danger-color);">⚠️ GAN artifact detected</span>' : ''}
+                    </div>
+                ` : '';
+
+            case 'Texture Analysis':
+                return data.entropy !== undefined ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Entropy: ${data.entropy.toFixed(2)} | Contrast: ${data.contrast?.toFixed(0) || 'N/A'}
+                    </div>
+                ` : '';
+
+            case 'Noise Analysis':
+                return data.avgNoise !== undefined ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Avg noise level: ${data.avgNoise.toFixed(2)}
+                        ${data.avgNoise < 2 ? '<br><span style="color: var(--danger-color);">⚠️ Unnaturally smooth</span>' : ''}
+                    </div>
+                ` : '';
+
+            case 'Color Distribution':
+                return data.avgSmoothness !== undefined ? `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Smoothness: ${(data.avgSmoothness * 100).toFixed(1)}%
+                    </div>
+                ` : '';
+
+            default:
+                return '';
+        }
+    };
+
+    // Generate AI model predictions
+    const generateAIModelPredictions = () => {
+        if (!aiModel.details || !aiModel.details.available) {
+            return '<p style="color: var(--text-muted); font-style: italic;">AI model detection unavailable (Transformers.js not loaded or model failed to load)</p>';
+        }
+
+        const predictions = aiModel.details.predictions || [];
+        const indicators = aiModel.details.aiIndicators || [];
+        const reasoning = aiModel.details.reasoning || [];
+
+        return `
+            <div style="margin-top: 0.5rem;">
+                <p><strong>Model:</strong> ${aiModel.details.modelName}</p>
+
+                ${predictions.length > 0 ? `
+                    <p style="margin-top: 0.75rem;"><strong>Top Classifications:</strong></p>
+                    <div style="margin-top: 0.5rem;">
+                        ${predictions.slice(0, 5).map((pred, i) => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-tertiary); padding: 0.5rem; border-radius: var(--radius-sm); margin-bottom: 0.25rem;">
+                                <span style="font-size: 0.875rem;">${i + 1}. ${pred.label}</span>
+                                <span style="font-weight: 600; color: ${getScoreColor(pred.score * 100)};">${(pred.score * 100).toFixed(1)}%</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+
+                ${indicators.length > 0 ? `
+                    <p style="margin-top: 0.75rem;"><strong>AI Indicators:</strong></p>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem;">
+                        ${indicators.map(ind => `<li>${ind}</li>`).join('')}
+                    </ul>
+                ` : ''}
+
+                ${reasoning.length > 0 ? `
+                    <p style="margin-top: 0.75rem;"><strong>Reasoning:</strong></p>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        ${reasoning.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                ` : ''}
+            </div>
+        `;
+    };
+
     return `
+        <!-- Image Display -->
         <div style="text-align: center; margin-bottom: 1.5rem;">
             <img src="${results.imageElement.src}" alt="Analyzed Image" style="max-width: 100%; max-height: 400px; border-radius: var(--radius-md); box-shadow: var(--shadow-md); margin-bottom: 1rem;">
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: ${combined.score >= 50 ? 'var(--danger-color)' : 'var(--success-color)'};">
+        <!-- Score Overview -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="background: linear-gradient(135deg, ${getScoreColor(combined.score)}15, ${getScoreColor(combined.score)}05); border: 2px solid ${getScoreColor(combined.score)}; padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: 3rem; font-weight: bold; color: ${getScoreColor(combined.score)};">
                     ${combined.score}
                 </div>
-                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                <div style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; font-weight: 600;">
                     Combined Score
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    ${combined.methodsUsed} methods · ${combined.confidence} confidence
                 </div>
             </div>
 
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--text-secondary);">
+                <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(pixel.score)};">
                     ${pixel.score || 0}
                 </div>
                 <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                    Pixel Analysis
+                    🔬 Pixel Analysis
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    ${combined.breakdown?.pixelWeight ? `${Math.round(combined.breakdown.pixelWeight * 100)}% weight` : ''}
                 </div>
             </div>
 
             <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
-                <div style="font-size: 2.5rem; font-weight: bold; color: var(--text-secondary);">
+                <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(metadata.score)};">
                     ${metadata.score || 0}
                 </div>
                 <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                    Metadata Analysis
+                    📋 Metadata
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    ${combined.breakdown?.metadataWeight ? `${Math.round(combined.breakdown.metadataWeight * 100)}% weight` : ''}
                 </div>
             </div>
+
+            ${aiModel.details?.available ? `
+                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(aiModel.score)};">
+                        ${aiModel.score || 0}
+                    </div>
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        🤖 AI Model
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        ${combined.breakdown?.aiModelWeight ? `${Math.round(combined.breakdown.aiModelWeight * 100)}% weight` : ''}
+                    </div>
+                </div>
+            ` : ''}
         </div>
 
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
-            <div style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">📊 Assessment</div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+        <!-- Overall Assessment -->
+        <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; border-left: 4px solid ${getScoreColor(combined.score)};">
+            <div style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--text-primary);">
+                📊 Overall Assessment
+            </div>
+            <div style="font-size: 1rem; color: ${getScoreColor(combined.score)}; margin-bottom: 0.5rem; font-weight: 600;">
                 ${combined.assessment}
             </div>
-            <div style="font-size: 0.875rem; color: var(--text-muted);">
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
                 ${combined.agreement}
             </div>
         </div>
 
-        <details style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">🔬 Pixel Analysis Details</summary>
-            <div style="font-size: 0.875rem; margin-top: 0.5rem;">
-                <p><strong>Score:</strong> ${pixel.score}/100</p>
-                <p><strong>Confidence:</strong> ${pixel.confidence}</p>
-                <p><strong>Explanation:</strong> ${pixel.explanation}</p>
-                ${pixel.details && pixel.details.reasons && pixel.details.reasons.length > 0 ? `
-                    <p><strong>Detected patterns:</strong></p>
-                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                        ${pixel.details.reasons.map(r => `<li>${r}</li>`).join('')}
-                    </ul>
-                ` : ''}
-            </div>
-        </details>
+        <!-- Detection Methods Breakdown -->
+        <div style="margin-bottom: 1rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--text-primary);">🔬 Detection Methods Breakdown</h3>
 
-        <details style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
-            <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">📋 Metadata Analysis Details</summary>
-            <div style="font-size: 0.875rem; margin-top: 0.5rem;">
-                <p><strong>Score:</strong> ${metadata.score}/100</p>
-                <p><strong>Confidence:</strong> ${metadata.confidence}</p>
-                <p><strong>Explanation:</strong> ${metadata.explanation}</p>
-                ${metadata.details ? `
-                    <p><strong>File type:</strong> ${metadata.details.fileType}</p>
-                    <p><strong>Has EXIF:</strong> ${metadata.details.hasEXIF ? 'Yes' : 'No'}</p>
-                    ${metadata.details.aiMarkers && metadata.details.aiMarkers.length > 0 ? `
-                        <p style="color: var(--danger-color); font-weight: 600;">🚨 AI Generator Markers Found: ${metadata.details.aiMarkers.join(', ')}</p>
-                    ` : ''}
-                    ${metadata.details.reasons && metadata.details.reasons.length > 0 ? `
-                        <p><strong>Findings:</strong></p>
-                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                            ${metadata.details.reasons.map(r => `<li>${r}</li>`).join('')}
-                        </ul>
-                    ` : ''}
-                ` : ''}
-            </div>
-        </details>
+            <!-- Pixel Analysis -->
+            <details open style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem; font-size: 1rem; user-select: none;">
+                    🔬 Pixel Analysis - ${pixel.score}/100
+                    <span style="font-size: 0.875rem; color: var(--text-muted);">(${pixel.confidence} confidence)</span>
+                </summary>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);"><em>${pixel.explanation}</em></p>
 
+                    <h4 style="font-size: 0.875rem; margin-bottom: 0.75rem; color: var(--text-primary);">Sub-Method Scores:</h4>
+                    ${generatePixelSubMethods()}
+
+                    ${pixelDetails.reasons && pixelDetails.reasons.length > 0 ? `
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+                            <p style="font-weight: 600; margin-bottom: 0.5rem;">🎯 Key Findings:</p>
+                            <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem;">
+                                ${pixelDetails.reasons.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </details>
+
+            <!-- Metadata Analysis -->
+            <details style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem; font-size: 1rem; user-select: none;">
+                    📋 Metadata Analysis - ${metadata.score}/100
+                    <span style="font-size: 0.875rem; color: var(--text-muted);">(${metadata.confidence} confidence)</span>
+                </summary>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);"><em>${metadata.explanation}</em></p>
+
+                    ${metadata.details ? `
+                        <div style="margin-bottom: 1rem;">
+                            <p><strong>File Type:</strong> ${metadata.details.fileType}</p>
+                            <p><strong>Has EXIF Data:</strong> ${metadata.details.hasEXIF ? 'Yes' : 'No'}</p>
+                            ${metadata.details.software ? `<p><strong>Software:</strong> ${metadata.details.software}</p>` : ''}
+                        </div>
+
+                        ${metadata.details.aiMarkers && metadata.details.aiMarkers.length > 0 ? `
+                            <div style="background: var(--danger-color)15; border: 2px solid var(--danger-color); padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                                <p style="color: var(--danger-color); font-weight: 700; margin-bottom: 0.5rem;">
+                                    🚨 AI Generator Markers Detected
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--text-primary);">
+                                    ${metadata.details.aiMarkers.join(', ')}
+                                </p>
+                            </div>
+                        ` : ''}
+
+                        ${metadata.details.reasons && metadata.details.reasons.length > 0 ? `
+                            <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+                                <p style="font-weight: 600; margin-bottom: 0.5rem;">🎯 Findings:</p>
+                                <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem;">
+                                    ${metadata.details.reasons.map(r => `<li>${r}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    ` : ''}
+                </div>
+            </details>
+
+            <!-- AI Model Detection -->
+            <details ${aiModel.details?.available ? 'open' : ''} style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem; font-size: 1rem; user-select: none;">
+                    🤖 AI Model Detection - ${aiModel.score || 0}/100
+                    <span style="font-size: 0.875rem; color: var(--text-muted);">${aiModel.details?.available ? `(${aiModel.confidence} confidence)` : '(unavailable)'}</span>
+                </summary>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);"><em>${aiModel.explanation}</em></p>
+                    ${generateAIModelPredictions()}
+                </div>
+            </details>
+        </div>
+
+        <!-- Image Information -->
         <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md); font-size: 0.875rem; color: var(--text-secondary);">
-            <strong>Image Info:</strong> ${imageInfo.dimensions.width}×${imageInfo.dimensions.height} · ${(imageInfo.fileSize / 1024).toFixed(1)} KB · ${imageInfo.fileType}
+            <p style="font-weight: 600; margin-bottom: 0.5rem;">📄 Image Information</p>
+            <p><strong>Dimensions:</strong> ${imageInfo.dimensions.width} × ${imageInfo.dimensions.height} pixels</p>
+            <p><strong>File Size:</strong> ${(imageInfo.fileSize / 1024).toFixed(1)} KB</p>
+            <p><strong>File Type:</strong> ${imageInfo.fileType}</p>
+            <p><strong>File Name:</strong> ${imageInfo.fileName}</p>
         </div>
     `;
 }
