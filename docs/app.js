@@ -1082,15 +1082,17 @@ function generateInlineImageResults(results) {
                 return data.duplicateRatio ? `
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
                         Duplicate pixel ratio: ${(data.duplicateRatio * 100).toFixed(2)}%
-                        ${data.duplicateRatio > 0.15 ? '<br><span style="color: var(--danger-color);">⚠️ High upsampling detected</span>' : ''}
+                        ${data.duplicateRatio > 0.14 ? '<br><span style="color: var(--danger-color);">⚠️ High upsampling detected</span>' : ''}
                     </div>
                 ` : '';
 
             case 'Frequency Analysis (FFT)':
                 return data.rioStdDev !== undefined ? `
                     <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                        RIO variance: ${data.rioVariance?.toFixed(4) || 'N/A'}<br>
+                        ${data.rioScore !== undefined ? `RIO score: ${Math.round(data.rioScore)}/100<br>` : ''}
+                        ${data.highFreqScore !== undefined ? `High-freq score: ${Math.round(data.highFreqScore)}/100<br>` : ''}
                         High freq ratio: ${(data.highFreqRatio * 100).toFixed(1)}%
+                        ${data.highFreqRatio > 0.55 ? '<br><span style="color: var(--danger-color);">⚠️ Elevated high-frequency content (GAN/diffusion)</span>' : ''}
                     </div>
                 ` : '';
 

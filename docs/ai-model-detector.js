@@ -23,23 +23,28 @@ class AIModelDetector {
                 console.log('Loading AI model for image detection...');
 
                 // Check if Transformers.js is available
-                if (typeof pipeline === 'undefined') {
-                    console.warn('Transformers.js not loaded, skipping AI model detection');
+                if (typeof window.pipeline === 'undefined') {
+                    console.warn('Transformers.js (pipeline) not loaded, skipping AI model detection');
+                    console.warn('Make sure the Transformers.js script is loaded before this script');
                     return false;
                 }
 
+                console.log('Transformers.js detected, initializing pipeline...');
+
                 // Load image classification pipeline
                 // Using a lightweight model that can detect AI-generated patterns
-                this.model = await pipeline('image-classification', this.modelName, {
+                this.model = await window.pipeline('image-classification', this.modelName, {
                     quantized: true, // Use quantized model for faster inference
+                    device: 'wasm', // Use WebAssembly backend for compatibility
                 });
 
                 this.modelLoaded = true;
-                console.log('AI model loaded successfully');
+                console.log('✓ AI model loaded successfully');
                 return true;
 
             } catch (error) {
-                console.warn('Failed to load AI model:', error);
+                console.error('Failed to load AI model:', error);
+                console.error('Error details:', error.message, error.stack);
                 return false;
             }
         })();
@@ -67,8 +72,17 @@ class AIModelDetector {
 
             console.log('Running AI model inference...');
 
-            // Run inference
-            const predictions = await this.model(imageElement, { topk: 5 });
+            // Run inference - use the image src URL instead of element
+            // Transformers.js v3 accepts URLs, Blobs, Canvas, or RawImage
+            let predictions;
+            try {
+                // Try with image element first
+                predictions = await this.model(imageElement.src, { topk: 5 });
+            } catch (e) {
+                console.warn('Failed with image src, trying file blob:', e);
+                // If that fails, try with the file blob
+                predictions = await this.model(file, { topk: 5 });
+            }
 
             // Analyze predictions for AI-generation indicators
             const analysis = this.analyzePredictions(predictions);
@@ -192,7 +206,7 @@ class AIModelDetector {
 
     // Method to check if Transformers.js is available
     static isAvailable() {
-        return typeof pipeline !== 'undefined';
+        return typeof window.pipeline !== 'undefined';
     }
 
     // Method to get model status

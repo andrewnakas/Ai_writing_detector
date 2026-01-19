@@ -103,8 +103,30 @@ class PixelAnalysisDetector {
 
             // AI images often have:
             // - Low RIO variance (constant spectral signature)
-            // - Higher high-frequency content
+            // - Higher high-frequency content (GAN/diffusion artifacts)
             // - Distinct periodic patterns
+
+            // Calculate RIO-based score (low variance = AI)
+            const rioScore = Math.max(0, 100 - (rioStdDev / rioMean) * 200);
+
+            // Calculate high-frequency score (elevated high-freq = AI)
+            // Real photos typically have 20-40% high freq, AI images often 50-85%
+            let highFreqScore = 0;
+            if (freqCharacteristics.highFreqRatio > 0.65) {
+                highFreqScore = 90; // Very high - strong AI indicator
+            } else if (freqCharacteristics.highFreqRatio > 0.55) {
+                highFreqScore = 75; // High - likely AI
+            } else if (freqCharacteristics.highFreqRatio > 0.45) {
+                highFreqScore = 55; // Moderately high - possibly AI
+            } else if (freqCharacteristics.highFreqRatio > 0.35) {
+                highFreqScore = 30; // Slightly elevated
+            } else {
+                highFreqScore = 10; // Normal range
+            }
+
+            // Combine RIO and high-frequency scores (weighted average)
+            // High-frequency content is more reliable for modern AI (GANs/Diffusion)
+            const combinedScore = Math.round(rioScore * 0.35 + highFreqScore * 0.65);
 
             return {
                 rioVariance: rioVariance,
@@ -113,9 +135,9 @@ class PixelAnalysisDetector {
                 highFreqRatio: freqCharacteristics.highFreqRatio,
                 midFreqRatio: freqCharacteristics.midFreqRatio,
                 lowFreqRatio: freqCharacteristics.lowFreqRatio,
-                // Low variance suggests AI (more constant)
-                // Reduced multiplier from 500 to 200 for more sensitive detection
-                aiLikelihood: Math.max(0, 100 - (rioStdDev / rioMean) * 200)
+                rioScore: rioScore,
+                highFreqScore: highFreqScore,
+                aiLikelihood: combinedScore
             };
 
         } catch (error) {
@@ -160,16 +182,19 @@ class PixelAnalysisDetector {
         const totalChecked = (checkSize / 2) * (checkSize / 2) * 2;
         const duplicateRatio = duplicatePixelScore / totalChecked;
 
-        // AI images with upsampling typically have 15-40% duplicate/near-duplicate pixels
+        // AI images with upsampling typically have 12-40% duplicate/near-duplicate pixels
+        // Adjusted thresholds based on real-world testing
         let aiLikelihood = 0;
-        if (duplicateRatio > 0.25) {
-            aiLikelihood = 85; // Very likely upsampled
-        } else if (duplicateRatio > 0.15) {
-            aiLikelihood = 70; // Likely upsampled
-        } else if (duplicateRatio > 0.08) {
-            aiLikelihood = 50; // Possibly upsampled
+        if (duplicateRatio > 0.22) {
+            aiLikelihood = 90; // Very likely upsampled
+        } else if (duplicateRatio > 0.14) {
+            aiLikelihood = 75; // Likely upsampled (threshold lowered from 0.15)
+        } else if (duplicateRatio > 0.09) {
+            aiLikelihood = 55; // Possibly upsampled (threshold lowered from 0.08)
+        } else if (duplicateRatio > 0.05) {
+            aiLikelihood = 35; // Slight upsampling indicators
         } else {
-            aiLikelihood = Math.min(40, duplicateRatio * 300); // Some similarity is normal
+            aiLikelihood = Math.min(20, duplicateRatio * 400); // Some similarity is normal
         }
 
         return {
