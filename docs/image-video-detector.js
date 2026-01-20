@@ -23,6 +23,8 @@ class ImageVideoDetector {
 
             // Run analyses in parallel
             console.log('Starting multi-method image analysis...');
+            console.log('🤖 [ImageVideoDetector] aiModelDetector exists:', !!this.aiModelDetector);
+            console.log('🤖 [ImageVideoDetector] Starting Promise.all with 3 methods...');
 
             const [pixelResults, metadataResults, aiModelResults] = await Promise.all([
                 this.pixelAnalyzer.analyze(imageElement, file).catch(err => {
@@ -56,6 +58,12 @@ class ImageVideoDetector {
                     };
                 })
             ]);
+
+            console.log('🤖 [ImageVideoDetector] All analyses complete');
+            console.log('🤖 [ImageVideoDetector] Pixel score:', pixelResults?.score);
+            console.log('🤖 [ImageVideoDetector] Metadata score:', metadataResults?.score);
+            console.log('🤖 [ImageVideoDetector] AI Model score:', aiModelResults?.score);
+            console.log('🤖 [ImageVideoDetector] AI Model available:', aiModelResults?.details?.available);
 
             // Calculate combined score
             const combinedResults = this.calculateCombinedScore(pixelResults, metadataResults, aiModelResults);

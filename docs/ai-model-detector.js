@@ -3,10 +3,12 @@
 
 class AIModelDetector {
     constructor() {
+        console.log('🤖 [AI Model] AIModelDetector constructor called');
         this.model = null;
         this.modelLoaded = false;
         this.modelName = 'Xenova/vit-base-patch16-224'; // We'll use a general ViT model
         this.loadingPromise = null;
+        console.log('🤖 [AI Model] Constructor complete - model name:', this.modelName);
     }
 
     async loadModel() {

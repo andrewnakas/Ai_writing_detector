@@ -30,8 +30,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         debugLog('- FFTAnalyzer:', typeof FFTAnalyzer);
         debugLog('- MetadataDetector:', typeof MetadataDetector);
         debugLog('- PixelAnalysisDetector:', typeof PixelAnalysisDetector);
+        debugLog('- AIModelDetector:', typeof AIModelDetector);
         debugLog('- ImageVideoDetector:', typeof ImageVideoDetector);
         debugLog('imageVideoDetector instance:', typeof imageVideoDetector);
+        debugLog('');
+        debugLog('🤖 Transformers.js status:');
+        debugLog('- window.pipeline:', typeof window.pipeline);
+        debugLog('- window.transformersReady:', typeof window.transformersReady);
+        debugLog('- window.transformersEnv:', typeof window.transformersEnv);
     } catch (error) {
         console.error('Failed to initialize application:', error);
         debugLog('FATAL ERROR during initialization:', error.message);
@@ -902,10 +908,15 @@ async function analyzeImage() {
     debugLog('imageVideoDetector exists:', imageVideoDetector ? 'YES' : 'NO');
     debugLog('typeof imageVideoDetector:', typeof imageVideoDetector);
 
+    // Debug AI model availability
+    debugLog('🤖 AIModelDetector class exists:', typeof AIModelDetector !== 'undefined' ? 'YES' : 'NO');
+    debugLog('🤖 window.pipeline exists:', typeof window.pipeline !== 'undefined' ? 'YES' : 'NO');
+    debugLog('🤖 Transformers.js ready promise:', window.transformersReady ? 'YES' : 'NO');
+
     // Show loading
     const loadingIndicator = document.getElementById('loadingIndicator');
     loadingIndicator.style.display = 'block';
-    loadingIndicator.querySelector('p').textContent = 'Analyzing image (FFT, metadata, pixel patterns)...';
+    loadingIndicator.querySelector('p').textContent = 'Analyzing image (pixel, metadata, AI model)...';
     document.getElementById('resultsSection').style.display = 'none';
 
     try {
@@ -928,7 +939,13 @@ async function analyzeImage() {
         debugLog('========== ANALYSIS RESULTS ==========');
         debugLog('PIXEL ANALYSIS SCORE:', results.pixelAnalysis.score + '/100');
         debugLog('METADATA ANALYSIS SCORE:', results.metadataAnalysis.score + '/100');
+        debugLog('🤖 AI MODEL SCORE:', results.aiModelAnalysis ? (results.aiModelAnalysis.score + '/100') : 'NOT AVAILABLE');
+        debugLog('🤖 AI MODEL AVAILABLE:', results.aiModelAnalysis?.details?.available ? 'YES' : 'NO');
+        if (results.aiModelAnalysis && !results.aiModelAnalysis.details?.available) {
+            debugLog('🤖 AI MODEL REASON:', results.aiModelAnalysis.details?.reason || results.aiModelAnalysis.explanation);
+        }
         debugLog('COMBINED SCORE:', results.combined.score + '/100');
+        debugLog('METHODS USED:', results.combined.methodsUsed || 'unknown');
         debugLog('ASSESSMENT:', results.combined.assessment);
         debugLog('CONFIDENCE:', results.combined.confidence);
         debugLog('AGREEMENT:', results.combined.agreement);
