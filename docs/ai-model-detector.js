@@ -20,31 +20,73 @@ class AIModelDetector {
 
         this.loadingPromise = (async () => {
             try {
-                console.log('Loading AI model for image detection...');
+                console.log('🤖 [AI Model] Starting to load AI model for image detection...');
 
-                // Check if Transformers.js is available
-                if (typeof window.pipeline === 'undefined') {
-                    console.warn('Transformers.js (pipeline) not loaded, skipping AI model detection');
-                    console.warn('Make sure the Transformers.js script is loaded before this script');
+                // Wait for Transformers.js to be ready
+                let pipeline = window.pipeline;
+
+                if (!pipeline && window.transformersReady) {
+                    console.log('🤖 [AI Model] Waiting for Transformers.js to finish loading...');
+                    try {
+                        const transformers = await window.transformersReady;
+                        pipeline = transformers.pipeline;
+                        console.log('🤖 [AI Model] Transformers.js ready!');
+                    } catch (e) {
+                        console.error('🤖 [AI Model] Failed to get transformers from promise:', e);
+                    }
+                }
+
+                // If still not available, try waiting for event
+                if (!pipeline) {
+                    console.log('🤖 [AI Model] Pipeline not available yet, waiting for transformers-ready event...');
+                    pipeline = await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Timeout waiting for Transformers.js'));
+                        }, 10000); // 10 second timeout
+
+                        window.addEventListener('transformers-ready', (e) => {
+                            clearTimeout(timeout);
+                            console.log('🤖 [AI Model] Received transformers-ready event');
+                            resolve(e.detail.pipeline);
+                        }, { once: true });
+
+                        // Check if it's already available
+                        if (window.pipeline) {
+                            clearTimeout(timeout);
+                            resolve(window.pipeline);
+                        }
+                    });
+                }
+
+                if (!pipeline) {
+                    console.error('🤖 [AI Model] Transformers.js pipeline not available after waiting');
                     return false;
                 }
 
-                console.log('Transformers.js detected, initializing pipeline...');
+                console.log('🤖 [AI Model] Pipeline function available, initializing model...');
+                console.log('🤖 [AI Model] Model name:', this.modelName);
 
                 // Load image classification pipeline
                 // Using a lightweight model that can detect AI-generated patterns
-                this.model = await window.pipeline('image-classification', this.modelName, {
+                this.model = await pipeline('image-classification', this.modelName, {
                     quantized: true, // Use quantized model for faster inference
-                    device: 'wasm', // Use WebAssembly backend for compatibility
+                    progress_callback: (progress) => {
+                        if (progress.status === 'downloading') {
+                            console.log(`🤖 [AI Model] Downloading model: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
+                        } else if (progress.status === 'done') {
+                            console.log(`🤖 [AI Model] Loaded: ${progress.file}`);
+                        }
+                    }
                 });
 
                 this.modelLoaded = true;
-                console.log('✓ AI model loaded successfully');
+                console.log('✅ [AI Model] Model loaded successfully and ready for inference!');
                 return true;
 
             } catch (error) {
-                console.error('Failed to load AI model:', error);
-                console.error('Error details:', error.message, error.stack);
+                console.error('❌ [AI Model] Failed to load AI model:', error);
+                console.error('❌ [AI Model] Error details:', error.message);
+                if (error.stack) console.error('❌ [AI Model] Stack:', error.stack);
                 return false;
             }
         })();
@@ -54,15 +96,18 @@ class AIModelDetector {
 
     async analyze(imageElement, file) {
         try {
+            console.log('🤖 [AI Model] Starting analysis...');
+
             // Try to load model if not already loaded
             const loaded = await this.loadModel();
 
             if (!loaded || !this.model) {
+                console.warn('🤖 [AI Model] Model not available, returning unavailable status');
                 return {
                     method: 'AI Model Detection',
                     score: 0,
                     confidence: 'unavailable',
-                    explanation: 'AI model detection unavailable - using pixel-based methods only',
+                    explanation: 'AI model detection unavailable - Transformers.js failed to load',
                     details: {
                         available: false,
                         reason: 'Model failed to load or Transformers.js not available'
@@ -70,22 +115,62 @@ class AIModelDetector {
                 };
             }
 
-            console.log('Running AI model inference...');
+            console.log('🤖 [AI Model] Model loaded, running inference...');
+            console.log('🤖 [AI Model] Image src type:', typeof imageElement.src);
+            console.log('🤖 [AI Model] File type:', file ? file.type : 'no file');
 
-            // Run inference - use the image src URL instead of element
-            // Transformers.js v3 accepts URLs, Blobs, Canvas, or RawImage
+            // Run inference - try multiple input methods
+            // Transformers.js v3 accepts: URL strings, File/Blob objects, HTMLImageElement, Canvas, or RawImage
             let predictions;
-            try {
-                // Try with image element first
-                predictions = await this.model(imageElement.src, { topk: 5 });
-            } catch (e) {
-                console.warn('Failed with image src, trying file blob:', e);
-                // If that fails, try with the file blob
-                predictions = await this.model(file, { topk: 5 });
+            let lastError = null;
+
+            // Method 1: Try with the file blob (most reliable)
+            if (file) {
+                try {
+                    console.log('🤖 [AI Model] Trying inference with File blob...');
+                    predictions = await this.model(file, { topk: 5 });
+                    console.log('✅ [AI Model] Inference successful with File blob!');
+                } catch (e) {
+                    console.warn('⚠️ [AI Model] Failed with file blob:', e.message);
+                    lastError = e;
+                }
             }
+
+            // Method 2: Try with image src URL
+            if (!predictions && imageElement.src) {
+                try {
+                    console.log('🤖 [AI Model] Trying inference with image.src URL...');
+                    predictions = await this.model(imageElement.src, { topk: 5 });
+                    console.log('✅ [AI Model] Inference successful with src URL!');
+                } catch (e) {
+                    console.warn('⚠️ [AI Model] Failed with image src:', e.message);
+                    lastError = e;
+                }
+            }
+
+            // Method 3: Try with the image element itself
+            if (!predictions) {
+                try {
+                    console.log('🤖 [AI Model] Trying inference with HTMLImageElement...');
+                    predictions = await this.model(imageElement, { topk: 5 });
+                    console.log('✅ [AI Model] Inference successful with image element!');
+                } catch (e) {
+                    console.warn('⚠️ [AI Model] Failed with image element:', e.message);
+                    lastError = e;
+                }
+            }
+
+            if (!predictions) {
+                throw lastError || new Error('All inference methods failed');
+            }
+
+            console.log('🤖 [AI Model] Predictions received:', predictions.length, 'results');
+            console.log('🤖 [AI Model] Top prediction:', predictions[0]?.label, '-', (predictions[0]?.score * 100).toFixed(1) + '%');
 
             // Analyze predictions for AI-generation indicators
             const analysis = this.analyzePredictions(predictions);
+
+            console.log('🤖 [AI Model] Analysis complete - Score:', analysis.score);
 
             return {
                 method: 'AI Model Detection',
@@ -103,7 +188,8 @@ class AIModelDetector {
             };
 
         } catch (error) {
-            console.error('AI model analysis error:', error);
+            console.error('❌ [AI Model] Analysis error:', error);
+            console.error('❌ [AI Model] Error details:', error.message);
             return {
                 method: 'AI Model Detection',
                 score: 0,

@@ -276,11 +276,23 @@
         env.allowLocalModels = false;
         env.allowRemoteModels = true;
 
-        // Make pipeline available globally
+        // Create a promise that resolves when Transformers.js is ready
+        window.transformersReady = Promise.resolve({
+            pipeline: pipeline,
+            env: env
+        });
+
+        // Also set directly for backwards compatibility
         window.pipeline = pipeline;
         window.transformersEnv = env;
 
         console.log('✓ Transformers.js loaded and ready');
+        console.log('Pipeline function available:', typeof pipeline);
+
+        // Dispatch event to signal readiness
+        window.dispatchEvent(new CustomEvent('transformers-ready', {
+            detail: { pipeline, env }
+        }));
     </script>
 
     <script src="detector.js"></script>
