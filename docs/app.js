@@ -1150,19 +1150,71 @@ function generateInlineImageResults(results) {
 
     // Generate AI model predictions
     const generateAIModelPredictions = () => {
+        // Show debug logs if available (regardless of availability)
+        const debugLogs = aiModel.details?.debugLogs || '';
+        const debugSection = debugLogs ? `
+            <details style="margin-top: 1rem; background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius-sm);">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-secondary);">🔍 Debug Logs (Click to expand)</summary>
+                <pre style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto;">${debugLogs}</pre>
+            </details>
+        ` : '';
+
         if (!aiModel.details || !aiModel.details.available) {
-            return '<p style="color: var(--text-muted); font-style: italic;">AI model detection unavailable (Transformers.js not loaded or model failed to load)</p>';
+            return `
+                <p style="color: var(--text-muted); font-style: italic;">
+                    ${aiModel.explanation || 'AI model detection unavailable (Transformers.js not loaded or model failed to load)'}
+                </p>
+                ${debugSection}
+            `;
         }
 
+        // Handle multi-model results
+        const modelsUsed = aiModel.details.modelsUsed || [];
+        const modelResults = aiModel.details.modelResults || [];
+        const ensembleReasoning = aiModel.details.ensembleReasoning || [];
+
+        // For backward compatibility, also check old format
         const predictions = aiModel.details.predictions || [];
         const indicators = aiModel.details.aiIndicators || [];
         const reasoning = aiModel.details.reasoning || [];
 
         return `
             <div style="margin-top: 0.5rem;">
-                <p><strong>Model:</strong> ${aiModel.details.modelName}</p>
+                ${modelsUsed.length > 0 ? `
+                    <p><strong>Models Used:</strong> ${modelsUsed.join(', ').toUpperCase()}</p>
+                ` : aiModel.details.modelName ? `
+                    <p><strong>Model:</strong> ${aiModel.details.modelName}</p>
+                ` : ''}
 
-                ${predictions.length > 0 ? `
+                ${modelResults.length > 0 ? `
+                    <div style="margin-top: 0.75rem;">
+                        <p style="font-weight: 600;">Individual Model Results:</p>
+                        ${modelResults.map(result => `
+                            <div style="background: var(--bg-tertiary); padding: 0.75rem; border-radius: var(--radius-sm); margin-top: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-weight: 600;">${result.model.toUpperCase()}</span>
+                                    <span style="font-weight: bold; color: ${getScoreColor(result.score)};">${result.score}/100</span>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">${result.reasoning}</div>
+                                ${result.predictions && result.predictions.length > 0 ? `
+                                    <details style="margin-top: 0.5rem;">
+                                        <summary style="cursor: pointer; font-size: 0.75rem; color: var(--text-muted);">View classifications</summary>
+                                        <div style="margin-top: 0.5rem;">
+                                            ${result.predictions.slice(0, 3).map((pred, i) => `
+                                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 0.25rem;">
+                                                    <span>${i + 1}. ${pred.label}</span>
+                                                    <span>${(pred.score * 100).toFixed(1)}%</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </details>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+
+                ${predictions.length > 0 && modelResults.length === 0 ? `
                     <p style="margin-top: 0.75rem;"><strong>Top Classifications:</strong></p>
                     <div style="margin-top: 0.5rem;">
                         ${predictions.slice(0, 5).map((pred, i) => `
@@ -1181,12 +1233,19 @@ function generateInlineImageResults(results) {
                     </ul>
                 ` : ''}
 
-                ${reasoning.length > 0 ? `
+                ${ensembleReasoning.length > 0 ? `
+                    <p style="margin-top: 0.75rem;"><strong>Ensemble Reasoning:</strong></p>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        ${ensembleReasoning.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                ` : reasoning.length > 0 ? `
                     <p style="margin-top: 0.75rem;"><strong>Reasoning:</strong></p>
                     <ul style="margin: 0.5rem 0; padding-left: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
                         ${reasoning.map(r => `<li>${r}</li>`).join('')}
                     </ul>
                 ` : ''}
+
+                ${debugSection}
             </div>
         `;
     };

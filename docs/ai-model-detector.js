@@ -1,82 +1,112 @@
 // AI Model-based detection using Transformers.js
-// Uses multiple AI models for robust AI-generated image detection
-// Based on research: CLIP embeddings can detect AI-generated images with ~95% accuracy
+// Simplified version with extensive debugging
+// Will use ViT first, then add more models once working
 
 class AIModelDetector {
     constructor() {
-        console.log('🤖 [AI Model] AIModelDetector constructor called');
+        // Log to both console AND create visible debug flag
+        console.log('🤖🤖🤖 [NEW CODE v1769147060] AIModelDetector constructor called');
+        window.AI_MODEL_VERSION = 'v1769147060-MULTI-MODEL';
+
         this.models = {
-            clip: null,           // CLIP for zero-shot "real vs AI-generated" detection
-            vit: null,            // ViT for pattern analysis
-            resnet: null          // ResNet for artifact detection
+            vit: null,            // ViT for pattern analysis (STARTING WITH THIS)
+            clip: null,           // CLIP for zero-shot detection (will add after ViT works)
+            resnet: null          // ResNet for artifact detection (will add after ViT works)
         };
+
         this.modelLoaded = {
-            clip: false,
             vit: false,
+            clip: false,
             resnet: false
         };
 
-        // Model configurations
+        // Model configurations - simplified to start with just ViT
         this.modelConfigs = {
-            // CLIP is best for zero-shot AI detection (research shows ~95% accuracy)
-            clip: {
-                name: 'Xenova/clip-vit-base-patch32',
-                task: 'zero-shot-image-classification',
-                weight: 0.50,  // Highest weight - most reliable
-                quantized: true
-            },
-            // ViT good for detecting AI generation patterns
             vit: {
                 name: 'Xenova/vit-base-patch16-224',
                 task: 'image-classification',
-                weight: 0.30,
-                quantized: true
+                weight: 1.0,  // Using only ViT for now
+                quantized: true,
+                enabled: true
             },
-            // ResNet detects different artifacts than ViT
+            clip: {
+                name: 'Xenova/clip-vit-base-patch32',
+                task: 'zero-shot-image-classification',
+                weight: 0.50,
+                quantized: true,
+                enabled: false  // Disabled until ViT works
+            },
             resnet: {
                 name: 'Xenova/resnet-50',
                 task: 'image-classification',
                 weight: 0.20,
-                quantized: true
+                quantized: true,
+                enabled: false  // Disabled until ViT works
             }
         };
 
         this.loadingPromises = {};
-        console.log('🤖 [AI Model] Constructor complete - using multi-model ensemble');
+        this.debugLogs = [];  // Store debug logs to show on page
+
+        this.addDebugLog('✅ Constructor complete - Multi-model ensemble system initialized');
+        this.addDebugLog(`📋 Enabled models: ${Object.entries(this.modelConfigs).filter(([k,v]) => v.enabled).map(([k,v]) => k).join(', ')}`);
+
         console.log('🤖 [AI Model] Models configured:', Object.keys(this.modelConfigs));
     }
 
+    addDebugLog(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.debugLogs.push(`[${timestamp}] ${message}`);
+        console.log('🤖 [DEBUG]', message);
+
+        // Keep only last 20 logs
+        if (this.debugLogs.length > 20) {
+            this.debugLogs.shift();
+        }
+    }
+
+    getDebugLogs() {
+        return this.debugLogs.join('\n');
+    }
+
     async loadModel(modelKey) {
+        if (!this.modelConfigs[modelKey].enabled) {
+            this.addDebugLog(`⏭️ ${modelKey} is disabled, skipping`);
+            return false;
+        }
+
         if (this.modelLoaded[modelKey]) {
-            console.log(`🤖 [AI Model] ${modelKey} already loaded`);
+            this.addDebugLog(`✓ ${modelKey} already loaded`);
             return true;
         }
 
         if (this.loadingPromises[modelKey]) {
+            this.addDebugLog(`⏳ ${modelKey} already loading, waiting...`);
             return this.loadingPromises[modelKey];
         }
 
         this.loadingPromises[modelKey] = (async () => {
             try {
                 const config = this.modelConfigs[modelKey];
-                console.log(`🤖 [AI Model] Loading ${modelKey} (${config.name})...`);
+                this.addDebugLog(`🔄 Loading ${modelKey} (${config.name})...`);
 
                 // Wait for Transformers.js to be ready
                 let pipeline = window.pipeline;
 
                 if (!pipeline && window.transformersReady) {
-                    console.log('🤖 [AI Model] Waiting for Transformers.js...');
+                    this.addDebugLog('⏳ Waiting for Transformers.js promise...');
                     try {
                         const transformers = await window.transformersReady;
                         pipeline = transformers.pipeline;
+                        this.addDebugLog('✓ Transformers.js promise resolved');
                     } catch (e) {
-                        console.error('🤖 [AI Model] Failed to get transformers:', e);
+                        this.addDebugLog(`❌ Transformers.js promise failed: ${e.message}`);
                     }
                 }
 
                 // If still not available, try waiting for event
                 if (!pipeline) {
-                    console.log('🤖 [AI Model] Waiting for transformers-ready event...');
+                    this.addDebugLog('⏳ Waiting for transformers-ready event...');
                     pipeline = await new Promise((resolve, reject) => {
                         const timeout = setTimeout(() => {
                             reject(new Error('Timeout waiting for Transformers.js'));
@@ -84,6 +114,7 @@ class AIModelDetector {
 
                         window.addEventListener('transformers-ready', (e) => {
                             clearTimeout(timeout);
+                            this.addDebugLog('✓ Received transformers-ready event');
                             resolve(e.detail.pipeline);
                         }, { once: true });
 
@@ -95,31 +126,34 @@ class AIModelDetector {
                 }
 
                 if (!pipeline) {
-                    console.error(`🤖 [AI Model] Pipeline not available for ${modelKey}`);
+                    this.addDebugLog(`❌ Pipeline not available for ${modelKey}`);
                     return false;
                 }
 
-                console.log(`🤖 [AI Model] Initializing ${modelKey} pipeline...`);
+                this.addDebugLog(`🚀 Initializing ${modelKey} pipeline (task: ${config.task})...`);
 
                 // Load the model pipeline
                 this.models[modelKey] = await pipeline(config.task, config.name, {
                     quantized: config.quantized,
                     progress_callback: (progress) => {
                         if (progress.status === 'downloading') {
-                            console.log(`🤖 [${modelKey}] Downloading: ${progress.file} - ${Math.round(progress.progress || 0)}%`);
+                            const pct = Math.round(progress.progress || 0);
+                            if (pct % 25 === 0) {  // Log every 25%
+                                this.addDebugLog(`📥 [${modelKey}] Downloading ${progress.file}: ${pct}%`);
+                            }
                         } else if (progress.status === 'done') {
-                            console.log(`🤖 [${modelKey}] Loaded: ${progress.file}`);
+                            this.addDebugLog(`✅ [${modelKey}] Loaded: ${progress.file}`);
                         }
                     }
                 });
 
                 this.modelLoaded[modelKey] = true;
-                console.log(`✅ [AI Model] ${modelKey} loaded successfully!`);
+                this.addDebugLog(`🎉 ${modelKey} loaded successfully!`);
                 return true;
 
             } catch (error) {
-                console.error(`❌ [AI Model] Failed to load ${modelKey}:`, error);
-                console.error(`❌ [AI Model] Error details:`, error.message);
+                this.addDebugLog(`❌ Failed to load ${modelKey}: ${error.message}`);
+                console.error(`❌ [AI Model] ${modelKey} error:`, error);
                 return false;
             }
         })();
@@ -128,36 +162,42 @@ class AIModelDetector {
     }
 
     async loadAllModels() {
-        console.log('🤖 [AI Model] Loading all models in parallel...');
+        this.addDebugLog('🔄 Loading all enabled models in parallel...');
 
-        // Load all models in parallel for speed
-        const results = await Promise.allSettled([
-            this.loadModel('clip'),
-            this.loadModel('vit'),
-            this.loadModel('resnet')
-        ]);
+        // Get enabled models
+        const enabledModels = Object.entries(this.modelConfigs)
+            .filter(([key, config]) => config.enabled)
+            .map(([key]) => key);
 
-        const loaded = {
-            clip: results[0].status === 'fulfilled' && results[0].value,
-            vit: results[1].status === 'fulfilled' && results[1].value,
-            resnet: results[2].status === 'fulfilled' && results[2].value
-        };
+        this.addDebugLog(`📋 Will load: ${enabledModels.join(', ')}`);
 
-        console.log('🤖 [AI Model] Models loaded:', loaded);
+        // Load all enabled models in parallel
+        const results = await Promise.allSettled(
+            enabledModels.map(key => this.loadModel(key))
+        );
 
-        // Return true if at least one model loaded (preferably CLIP)
-        return loaded.clip || loaded.vit || loaded.resnet;
+        const loaded = {};
+        enabledModels.forEach((key, index) => {
+            loaded[key] = results[index].status === 'fulfilled' && results[index].value;
+        });
+
+        this.addDebugLog(`✅ Models loaded: ${JSON.stringify(loaded)}`);
+
+        const anyLoaded = Object.values(loaded).some(v => v);
+        this.addDebugLog(anyLoaded ? '🎉 At least one model loaded!' : '❌ No models loaded');
+
+        return anyLoaded;
     }
 
     async analyze(imageElement, file) {
         try {
-            console.log('🤖 [AI Model] Starting multi-model analysis...');
+            this.addDebugLog('🔬 === Starting multi-model analysis ===');
 
             // Try to load all models (they load in parallel)
             const anyLoaded = await this.loadAllModels();
 
             if (!anyLoaded) {
-                console.warn('🤖 [AI Model] No models available');
+                this.addDebugLog('❌ No models available for analysis');
                 return {
                     method: 'AI Model Detection',
                     score: 0,
@@ -165,21 +205,30 @@ class AIModelDetector {
                     explanation: 'AI model detection unavailable - Models failed to load',
                     details: {
                         available: false,
-                        reason: 'All models failed to load'
+                        reason: 'All models failed to load',
+                        debugLogs: this.getDebugLogs()
                     }
                 };
             }
 
-            console.log('🤖 [AI Model] Running inference with available models...');
+            this.addDebugLog('🖼️ Determining best input format...');
 
-            // Determine best input method
+            // Determine best input method - try each one and log what we have
+            this.addDebugLog(`  - file: ${file ? file.type : 'none'}`);
+            this.addDebugLog(`  - imageElement.src: ${imageElement.src ? 'yes ('+imageElement.src.substring(0,50)+'...)' : 'none'}`);
+            this.addDebugLog(`  - imageElement type: ${imageElement.constructor.name}`);
+
+            // Prefer file, then src, then element
             let inputImage = file || imageElement.src || imageElement;
-            console.log('🤖 [AI Model] Input type:', file ? 'File' : imageElement.src ? 'URL' : 'HTMLImageElement');
+            let inputType = file ? 'File blob' : imageElement.src ? 'Image URL' : 'HTMLImageElement';
+            this.addDebugLog(`✓ Using input type: ${inputType}`);
 
             // Run all available models in parallel
+            this.addDebugLog('🚀 Running inference on all loaded models...');
+
             const analyses = await Promise.allSettled([
-                this.runCLIPDetection(inputImage),
                 this.runViTDetection(inputImage),
+                this.runCLIPDetection(inputImage),
                 this.runResNetDetection(inputImage)
             ]);
 
@@ -187,25 +236,47 @@ class AIModelDetector {
             const results = [];
 
             if (analyses[0].status === 'fulfilled' && analyses[0].value) {
-                results.push({ model: 'clip', ...analyses[0].value });
+                results.push({ model: 'vit', ...analyses[0].value });
+                this.addDebugLog(`✅ ViT analysis complete: ${analyses[0].value.score}/100`);
+            } else if (analyses[0].status === 'rejected') {
+                this.addDebugLog(`❌ ViT failed: ${analyses[0].reason?.message || 'unknown'}`);
             }
+
             if (analyses[1].status === 'fulfilled' && analyses[1].value) {
-                results.push({ model: 'vit', ...analyses[1].value });
+                results.push({ model: 'clip', ...analyses[1].value });
+                this.addDebugLog(`✅ CLIP analysis complete: ${analyses[1].value.score}/100`);
+            } else if (analyses[1].status === 'rejected') {
+                this.addDebugLog(`❌ CLIP failed: ${analyses[1].reason?.message || 'unknown'}`);
             }
+
             if (analyses[2].status === 'fulfilled' && analyses[2].value) {
                 results.push({ model: 'resnet', ...analyses[2].value });
+                this.addDebugLog(`✅ ResNet analysis complete: ${analyses[2].value.score}/100`);
+            } else if (analyses[2].status === 'rejected') {
+                this.addDebugLog(`❌ ResNet failed: ${analyses[2].reason?.message || 'unknown'}`);
             }
 
             if (results.length === 0) {
-                throw new Error('All model inferences failed');
+                this.addDebugLog('❌ All model inferences failed');
+                return {
+                    method: 'AI Model Detection',
+                    score: 0,
+                    confidence: 'error',
+                    explanation: 'All model inferences failed - see debug logs',
+                    details: {
+                        available: false,
+                        error: 'All model inferences failed',
+                        debugLogs: this.getDebugLogs()
+                    }
+                };
             }
 
-            console.log(`🤖 [AI Model] Got ${results.length} successful analyses`);
+            this.addDebugLog(`✅ Got ${results.length} successful analyses`);
 
             // Combine results using weighted ensemble
             const combinedAnalysis = this.combineResults(results);
 
-            console.log('🤖 [AI Model] Final ensemble score:', combinedAnalysis.score);
+            this.addDebugLog(`🎯 Final ensemble score: ${combinedAnalysis.score}/100`);
 
             return {
                 method: 'AI Model Detection',
@@ -216,11 +287,13 @@ class AIModelDetector {
                     available: true,
                     modelsUsed: results.map(r => r.model),
                     modelResults: results,
-                    ensembleReasoning: combinedAnalysis.reasoning
+                    ensembleReasoning: combinedAnalysis.reasoning,
+                    debugLogs: this.getDebugLogs()
                 }
             };
 
         } catch (error) {
+            this.addDebugLog(`❌ CRITICAL ERROR: ${error.message}`);
             console.error('❌ [AI Model] Analysis error:', error);
             return {
                 method: 'AI Model Detection',
@@ -229,23 +302,55 @@ class AIModelDetector {
                 explanation: 'AI model analysis failed: ' + error.message,
                 details: {
                     available: false,
-                    error: error.message
+                    error: error.message,
+                    stack: error.stack,
+                    debugLogs: this.getDebugLogs()
                 }
             };
         }
     }
 
-    async runCLIPDetection(input) {
-        if (!this.modelLoaded.clip) {
-            console.log('🤖 [CLIP] Not loaded, skipping');
+    async runViTDetection(input) {
+        if (!this.modelLoaded.vit) {
+            this.addDebugLog('⏭️ ViT not loaded, skipping');
             return null;
         }
 
         try {
-            console.log('🤖 [CLIP] Running zero-shot classification...');
+            this.addDebugLog('🔬 [ViT] Running classification...');
 
-            // Zero-shot classification with carefully crafted prompts
-            // Research shows CLIP can detect AI-generated images with ~95% accuracy
+            const predictions = await this.models.vit(input, { topk: 5 });
+
+            this.addDebugLog(`📊 [ViT] Top: ${predictions[0]?.label} (${(predictions[0]?.score * 100).toFixed(1)}%)`);
+
+            // Analyze predictions for AI indicators
+            const analysis = this.analyzeImageNetPredictions(predictions);
+
+            this.addDebugLog(`✅ [ViT] Analysis score: ${analysis.score}/100`);
+
+            return {
+                score: analysis.score,
+                predictions: predictions,
+                indicators: analysis.indicators,
+                reasoning: `ViT: ${analysis.reasoning}`
+            };
+
+        } catch (error) {
+            this.addDebugLog(`❌ [ViT] Error during inference: ${error.message}`);
+            console.error('❌ [ViT] Error:', error);
+            throw error;  // Re-throw so Promise.allSettled catches it
+        }
+    }
+
+    async runCLIPDetection(input) {
+        if (!this.modelLoaded.clip) {
+            this.addDebugLog('⏭️ CLIP not loaded, skipping');
+            return null;
+        }
+
+        try {
+            this.addDebugLog('🔬 [CLIP] Running zero-shot classification...');
+
             const candidateLabels = [
                 'a real photograph taken with a camera',
                 'an AI-generated image',
@@ -257,7 +362,7 @@ class AIModelDetector {
 
             const result = await this.models.clip(input, candidateLabels);
 
-            console.log('🤖 [CLIP] Results:', result.map(r => `${r.label}: ${(r.score * 100).toFixed(1)}%`));
+            this.addDebugLog(`📊 [CLIP] Results: ${result.slice(0,2).map(r => `${r.label}: ${(r.score * 100).toFixed(1)}%`).join(', ')}`);
 
             // Calculate AI probability from results
             let aiScore = 0;
@@ -273,76 +378,42 @@ class AIModelDetector {
                 }
             });
 
-            // Normalize scores
             const totalScore = aiScore + realScore;
             const aiProbability = totalScore > 0 ? aiScore / totalScore : 0.5;
-
-            // Convert to 0-100 score
             const score = Math.round(aiProbability * 100);
 
-            console.log(`🤖 [CLIP] AI probability: ${(aiProbability * 100).toFixed(1)}%, Score: ${score}/100`);
+            this.addDebugLog(`✅ [CLIP] AI probability: ${(aiProbability * 100).toFixed(1)}%, Score: ${score}/100`);
 
             return {
                 score: score,
                 predictions: result,
                 aiProbability: aiProbability,
-                reasoning: `CLIP zero-shot: ${(aiProbability * 100).toFixed(1)}% AI-generated probability`
+                reasoning: `CLIP zero-shot: ${(aiProbability * 100).toFixed(1)}% AI-generated`
             };
 
         } catch (error) {
-            console.error('❌ [CLIP] Error:', error.message);
-            return null;
-        }
-    }
-
-    async runViTDetection(input) {
-        if (!this.modelLoaded.vit) {
-            console.log('🤖 [ViT] Not loaded, skipping');
-            return null;
-        }
-
-        try {
-            console.log('🤖 [ViT] Running classification...');
-
-            const predictions = await this.models.vit(input, { topk: 5 });
-
-            console.log('🤖 [ViT] Top prediction:', predictions[0]?.label, '-', (predictions[0]?.score * 100).toFixed(1) + '%');
-
-            // Analyze predictions for AI indicators
-            const analysis = this.analyzeImageNetPredictions(predictions);
-
-            console.log(`🤖 [ViT] Analysis score: ${analysis.score}/100`);
-
-            return {
-                score: analysis.score,
-                predictions: predictions,
-                indicators: analysis.indicators,
-                reasoning: `ViT: ${analysis.reasoning}`
-            };
-
-        } catch (error) {
-            console.error('❌ [ViT] Error:', error.message);
-            return null;
+            this.addDebugLog(`❌ [CLIP] Error during inference: ${error.message}`);
+            console.error('❌ [CLIP] Error:', error);
+            throw error;
         }
     }
 
     async runResNetDetection(input) {
         if (!this.modelLoaded.resnet) {
-            console.log('🤖 [ResNet] Not loaded, skipping');
+            this.addDebugLog('⏭️ ResNet not loaded, skipping');
             return null;
         }
 
         try {
-            console.log('🤖 [ResNet] Running classification...');
+            this.addDebugLog('🔬 [ResNet] Running classification...');
 
             const predictions = await this.models.resnet(input, { topk: 5 });
 
-            console.log('🤖 [ResNet] Top prediction:', predictions[0]?.label, '-', (predictions[0]?.score * 100).toFixed(1) + '%');
+            this.addDebugLog(`📊 [ResNet] Top: ${predictions[0]?.label} (${(predictions[0]?.score * 100).toFixed(1)}%)`);
 
-            // Analyze predictions for AI indicators
             const analysis = this.analyzeImageNetPredictions(predictions);
 
-            console.log(`🤖 [ResNet] Analysis score: ${analysis.score}/100`);
+            this.addDebugLog(`✅ [ResNet] Analysis score: ${analysis.score}/100`);
 
             return {
                 score: analysis.score,
@@ -352,18 +423,13 @@ class AIModelDetector {
             };
 
         } catch (error) {
-            console.error('❌ [ResNet] Error:', error.message);
-            return null;
+            this.addDebugLog(`❌ [ResNet] Error during inference: ${error.message}`);
+            console.error('❌ [ResNet] Error:', error);
+            throw error;
         }
     }
 
     analyzeImageNetPredictions(predictions) {
-        // AI-generated images often show certain patterns with ImageNet classifiers:
-        // 1. Lower confidence (model is uncertain)
-        // 2. Uniform probability distribution
-        // 3. Abstract/pattern classifications
-        // 4. Unusual combinations of features
-
         let score = 0;
         let indicators = [];
         let reasoning = [];
@@ -376,24 +442,24 @@ class AIModelDetector {
         if (topConfidence < 0.2) {
             score += 40;
             indicators.push('Very low classification confidence');
-            reasoning.push(`Low confidence (${(topConfidence * 100).toFixed(1)}%)`);
+            reasoning.push(`Low conf (${(topConfidence * 100).toFixed(1)}%)`);
         } else if (topConfidence < 0.4) {
             score += 25;
             indicators.push('Low confidence');
-            reasoning.push(`Moderate confidence (${(topConfidence * 100).toFixed(1)}%)`);
+            reasoning.push(`Mod conf (${(topConfidence * 100).toFixed(1)}%)`);
         } else if (topConfidence < 0.6) {
             score += 10;
-            reasoning.push(`Fair confidence (${(topConfidence * 100).toFixed(1)}%)`);
+            reasoning.push(`Fair conf (${(topConfidence * 100).toFixed(1)}%)`);
         }
 
         // Uniform distribution suggests AI generation
         if (confidenceSpread < 0.10) {
             score += 30;
             indicators.push('Uniform probability distribution');
-            reasoning.push('Multiple classes equally likely');
+            reasoning.push('Equal probabilities');
         } else if (confidenceSpread < 0.20) {
             score += 15;
-            reasoning.push('Moderate probability spread');
+            reasoning.push('Moderate spread');
         }
 
         // Check for abstract/synthetic terms
@@ -411,7 +477,7 @@ class AIModelDetector {
         if (hasSyntheticTerms) {
             score += 20;
             indicators.push('Synthetic/abstract classification');
-            reasoning.push('Classified as synthetic/abstract content');
+            reasoning.push('Synthetic labels');
         }
 
         const reasoningText = reasoning.join(', ');
@@ -423,38 +489,34 @@ class AIModelDetector {
     }
 
     combineResults(results) {
-        // Weighted ensemble of all available models
         let totalWeightedScore = 0;
         let totalWeight = 0;
         const allReasoning = [];
 
         results.forEach(result => {
             const config = this.modelConfigs[result.model];
-            if (config) {
+            if (config && config.enabled) {
                 totalWeightedScore += result.score * config.weight;
                 totalWeight += config.weight;
                 allReasoning.push(result.reasoning);
             }
         });
 
-        // Normalize to 0-100 scale
         const finalScore = totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0;
 
-        // Determine confidence
         let confidence = 'low';
         if (finalScore >= 60) confidence = 'high';
         else if (finalScore >= 35) confidence = 'medium';
 
-        // Generate explanation
         let explanation = '';
         if (finalScore >= 70) {
-            explanation = `${results.length} AI models show strong evidence of AI generation`;
+            explanation = `${results.length} AI model(s) show strong evidence of AI generation`;
         } else if (finalScore >= 50) {
-            explanation = `${results.length} AI models detect moderate signs of AI generation`;
+            explanation = `${results.length} AI model(s) detect moderate signs of AI generation`;
         } else if (finalScore >= 30) {
-            explanation = `${results.length} AI models find some AI-generation indicators`;
+            explanation = `${results.length} AI model(s) find some AI-generation indicators`;
         } else {
-            explanation = `${results.length} AI models suggest likely real photograph`;
+            explanation = `${results.length} AI model(s) suggest likely real photograph`;
         }
 
         return {
@@ -465,17 +527,16 @@ class AIModelDetector {
         };
     }
 
-    // Method to check if Transformers.js is available
     static isAvailable() {
         return typeof window.pipeline !== 'undefined';
     }
 
-    // Method to get model status
     getStatus() {
         return {
             available: AIModelDetector.isAvailable(),
             loaded: this.modelLoaded,
-            models: Object.keys(this.modelConfigs)
+            models: Object.keys(this.modelConfigs),
+            version: window.AI_MODEL_VERSION
         };
     }
 }
