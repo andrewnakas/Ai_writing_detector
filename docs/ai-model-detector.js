@@ -20,28 +20,28 @@ class AIModelDetector {
             resnet: false
         };
 
-        // Model configurations - simplified to start with just ViT
+        // Model configurations - Multi-model ensemble for robust AI detection
         this.modelConfigs = {
             vit: {
                 name: 'Xenova/vit-base-patch16-224',
                 task: 'image-classification',
-                weight: 1.0,  // Using only ViT for now
+                weight: 0.40,  // Pattern analysis via ImageNet classification
                 quantized: true,
                 enabled: true
             },
             clip: {
                 name: 'Xenova/clip-vit-base-patch32',
                 task: 'zero-shot-image-classification',
-                weight: 0.50,
+                weight: 0.45,  // Direct AI detection (most reliable)
                 quantized: true,
-                enabled: false  // Disabled until ViT works
+                enabled: true  // Enabled for multi-model ensemble
             },
             resnet: {
                 name: 'Xenova/resnet-50',
                 task: 'image-classification',
-                weight: 0.20,
+                weight: 0.15,  // Additional artifact detection
                 quantized: true,
-                enabled: false  // Disabled until ViT works
+                enabled: true  // Enabled for multi-model ensemble
             }
         };
 
