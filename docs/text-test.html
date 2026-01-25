@@ -526,7 +526,19 @@
             try {
                 // Run both detection methods
                 const patternResults = detector.analyzeText(text);
-                const compressionResults = compressionDetector.analyze(text);
+                const compressionResults = await compressionDetector.analyze(text);
+
+                // Validate results
+                if (!patternResults || !compressionResults) {
+                    throw new Error('Detection methods returned invalid results');
+                }
+
+                if (typeof patternResults.overallScore !== 'number' || typeof compressionResults.score !== 'number') {
+                    throw new Error('Invalid scores returned: ' + JSON.stringify({
+                        pattern: patternResults.overallScore,
+                        compression: compressionResults.score
+                    }));
+                }
 
                 // Combine results (70% pattern, 30% compression)
                 const overallScore = Math.round(
@@ -546,13 +558,20 @@
             } catch (error) {
                 updateStatus('❌ Analysis failed: ' + error.message, 'error');
                 console.error('Analysis error:', error);
+                console.error('Error stack:', error.stack);
             }
         }
 
         // Display results
         function displayResults(results) {
-            // Show results panel
-            document.getElementById('resultsPanel').classList.remove('hidden');
+            try {
+                // Validate results structure
+                if (!results || !results.pattern || !results.compression) {
+                    throw new Error('Invalid results structure');
+                }
+
+                // Show results panel
+                document.getElementById('resultsPanel').classList.remove('hidden');
 
             // Overall score
             document.getElementById('overallScore').textContent = results.overall;
@@ -579,9 +598,10 @@
 
             // Compression details
             const compressionHTML = `
-                <p><strong>Compression Ratio:</strong> ${results.compression.compressionRatio.toFixed(3)}</p>
-                <p><strong>With AI Corpus:</strong> ${results.compression.withAICorpusRatio.toFixed(3)}</p>
-                <p><strong>Difference:</strong> ${(results.compression.compressionRatio - results.compression.withAICorpusRatio).toFixed(3)}</p>
+                <p><strong>Text Alone Ratio:</strong> ${results.compression.metrics.textAloneRatio}</p>
+                <p><strong>With AI Corpus:</strong> ${results.compression.metrics.withAICorpusRatio}</p>
+                <p><strong>Difference:</strong> ${results.compression.metrics.difference}</p>
+                <p style="font-size: 0.9em; color: #6c757d; margin-top: 10px;">${results.compression.explanation}</p>
             `;
             document.getElementById('compressionDetails').innerHTML = compressionHTML;
 
@@ -622,6 +642,12 @@
 
             // Scroll to results
             document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error('Error displaying results:', error);
+                updateStatus('❌ Error displaying results: ' + error.message, 'error');
+                document.getElementById('resultsPanel').classList.add('hidden');
+            }
         }
 
         // Clear all
