@@ -246,8 +246,19 @@
         async function initializeDetector() {
             try {
                 log('Initializing AI Model Detector...', 'loading');
+
+                // Check if AIModelDetector class is available
+                if (typeof AIModelDetector === 'undefined') {
+                    throw new Error('AIModelDetector class not loaded. Script may have failed to load.');
+                }
+
                 detector = new AIModelDetector();
-                log('Detector initialized, checking version: ' + window.AI_MODEL_VERSION, 'success');
+
+                if (!detector) {
+                    throw new Error('Failed to create AIModelDetector instance');
+                }
+
+                log('Detector initialized, checking version: ' + (window.AI_MODEL_VERSION || 'unknown'), 'success');
 
                 // Get debug logs from detector
                 const detectorLogs = detector.getDebugLogs();
@@ -258,6 +269,7 @@
                 return true;
             } catch (error) {
                 log('Failed to initialize detector: ' + error.message, 'error');
+                console.error('Detector initialization error:', error);
                 return false;
             }
         }
@@ -266,6 +278,17 @@
             if (!currentImage || !currentFile) {
                 alert('Please upload an image first!');
                 return;
+            }
+
+            // Check if detector is initialized
+            if (!detector) {
+                log('⚠️ Detector not initialized, attempting to initialize now...', 'loading');
+                const success = await initializeDetector();
+                if (!success || !detector) {
+                    alert('Failed to initialize AI detector. Please refresh the page and try again.');
+                    log('❌ Detector initialization failed', 'error');
+                    return;
+                }
             }
 
             const resultsDiv = document.getElementById('results');
@@ -280,6 +303,7 @@
             updateModelStatus('resnet', 'loading', 'Loading...');
 
             try {
+                log('Calling detector.analyze()...');
                 const result = await detector.analyze(currentImage, currentFile);
 
                 log('Analysis complete!', 'success');
@@ -436,30 +460,42 @@
         window.addEventListener('load', async () => {
             log('Page loaded, waiting for Transformers.js...');
 
-            // Wait for transformers to be fully loaded
-            if (window.transformersLoadingPromise) {
-                log('Waiting for Transformers.js loading promise...');
-                const loaded = await window.transformersLoadingPromise;
-                if (!loaded) {
-                    log('❌ Transformers.js failed to load, detector will not work', 'error');
+            try {
+                // Wait for transformers to be fully loaded
+                if (window.transformersLoadingPromise) {
+                    log('Waiting for Transformers.js loading promise...');
+                    const loaded = await window.transformersLoadingPromise;
+                    if (!loaded) {
+                        log('❌ Transformers.js failed to load, detector will not work', 'error');
+                        document.getElementById('testBtn').disabled = true;
+                        return;
+                    }
+                } else if (window.transformersReady) {
+                    log('Waiting for legacy transformersReady promise...');
+                    await window.transformersReady;
+                }
+
+                // Verify pipeline is available
+                if (!window.pipeline) {
+                    log('❌ window.pipeline not available after loading', 'error');
+                    log('Available globals: ' + Object.keys(window).filter(k => k.includes('transform')).join(', '));
+                    document.getElementById('testBtn').disabled = true;
                     return;
                 }
-            } else if (window.transformersReady) {
-                log('Waiting for legacy transformersReady promise...');
-                await window.transformersReady;
-            }
 
-            // Verify pipeline is available
-            if (!window.pipeline) {
-                log('❌ window.pipeline not available after loading', 'error');
-                return;
-            }
+                log('✓ Transformers.js confirmed loaded, pipeline available');
 
-            log('✓ Transformers.js confirmed loaded, pipeline available');
-
-            const success = await initializeDetector();
-            if (success) {
-                log('✅ System ready! Upload an image to test the models.', 'success');
+                const success = await initializeDetector();
+                if (success && detector) {
+                    log('✅ System ready! Upload an image to test the models.', 'success');
+                } else {
+                    log('❌ Detector initialization failed - system not ready', 'error');
+                    document.getElementById('testBtn').disabled = true;
+                }
+            } catch (error) {
+                log('❌ Initialization error: ' + error.message, 'error');
+                console.error('Initialization error:', error);
+                document.getElementById('testBtn').disabled = true;
             }
         });
     </script>
