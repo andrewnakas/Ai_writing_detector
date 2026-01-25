@@ -221,19 +221,45 @@ class AIModelDetector {
             this.addDebugLog(`  - imageElement.src: ${imageElement.src ? 'yes ('+imageElement.src.substring(0,50)+'...)' : 'none'}`);
             this.addDebugLog(`  - imageElement type: ${imageElement.constructor.name}`);
 
-            // Prefer file, then src, then element
-            let inputImage = file || imageElement.src || imageElement;
-            let inputType = file ? 'File blob' : imageElement.src ? 'Image URL' : 'HTMLImageElement';
+            // Transformers.js requires URL strings or canvas elements, NOT File/Blob objects
+            // Priority: imageElement.src (URL string) > blob URL from file > imageElement itself
+            let inputImage;
+            let inputType;
+
+            if (imageElement.src) {
+                // Best option: use the already-loaded image URL (blob URL or data URL)
+                inputImage = imageElement.src;
+                inputType = 'Image URL (from element.src)';
+            } else if (file) {
+                // Create blob URL from file if imageElement.src not available
+                inputImage = URL.createObjectURL(file);
+                inputType = 'Blob URL (from file)';
+                this.addDebugLog(`⚠️ Created temporary blob URL for file: ${file.name}`);
+            } else {
+                // Fallback to element itself (may not work with all models)
+                inputImage = imageElement;
+                inputType = 'HTMLImageElement (fallback)';
+            }
+
             this.addDebugLog(`✓ Using input type: ${inputType}`);
 
             // Run all available models in parallel
             this.addDebugLog('🚀 Running inference on all loaded models...');
+
+            // Track if we created a temporary blob URL for cleanup
+            const createdBlobUrl = inputType.includes('Blob URL');
 
             const analyses = await Promise.allSettled([
                 this.runViTDetection(inputImage),
                 this.runCLIPDetection(inputImage),
                 this.runResNetDetection(inputImage)
             ]);
+
+            // Clean up temporary blob URL if we created one
+            if (createdBlobUrl && inputImage.startsWith('blob:')) {
+                URL.revokeObjectURL(inputImage);
+                this.addDebugLog('✓ Cleaned up temporary blob URL');
+            }
 
             // Collect successful results
             const results = [];
