@@ -175,23 +175,48 @@
 
     <!-- Load Transformers.js -->
     <script type="module">
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
+        async function loadTransformers() {
+            try {
+                const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
 
-        // Configure for browser usage
-        env.allowLocalModels = false;
-        env.allowRemoteModels = true;
+                // Configure for browser usage
+                env.allowLocalModels = false;
+                env.allowRemoteModels = true;
 
-        window.transformersReady = Promise.resolve({ pipeline, env });
-        window.pipeline = pipeline;
-        window.transformersEnv = env;
+                // Make globally available in multiple ways for maximum compatibility
+                window.pipeline = pipeline;
+                window.transformersEnv = env;
+                window.transformersReady = Promise.resolve({ pipeline, env });
 
-        log('✅ Transformers.js v3.1.2 loaded successfully', 'success');
-        document.getElementById('transformersStatus').className = 'status success';
-        document.getElementById('transformersStatus').textContent = '✅ Transformers.js ready';
+                // Log success
+                if (typeof log === 'function') {
+                    log('✅ Transformers.js v3.1.2 loaded successfully', 'success');
+                    log('Pipeline type: ' + typeof pipeline, 'info');
+                }
 
-        window.dispatchEvent(new CustomEvent('transformers-ready', {
-            detail: { pipeline, env }
-        }));
+                document.getElementById('transformersStatus').className = 'status success';
+                document.getElementById('transformersStatus').textContent = '✅ Transformers.js ready';
+
+                // Dispatch event for any listeners
+                window.dispatchEvent(new CustomEvent('transformers-ready', {
+                    detail: { pipeline, env }
+                }));
+
+                console.log('✅ Transformers.js fully initialized', { pipeline: typeof pipeline });
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to load Transformers.js:', error);
+                if (typeof log === 'function') {
+                    log('❌ Failed to load Transformers.js: ' + error.message, 'error');
+                }
+                document.getElementById('transformersStatus').className = 'status error';
+                document.getElementById('transformersStatus').textContent = '❌ Failed to load Transformers.js';
+                return false;
+            }
+        }
+
+        // Start loading immediately
+        window.transformersLoadingPromise = loadTransformers();
     </script>
 
     <!-- Load our AI detector -->
@@ -411,10 +436,26 @@
         window.addEventListener('load', async () => {
             log('Page loaded, waiting for Transformers.js...');
 
-            // Wait for transformers to be ready
-            if (window.transformersReady) {
+            // Wait for transformers to be fully loaded
+            if (window.transformersLoadingPromise) {
+                log('Waiting for Transformers.js loading promise...');
+                const loaded = await window.transformersLoadingPromise;
+                if (!loaded) {
+                    log('❌ Transformers.js failed to load, detector will not work', 'error');
+                    return;
+                }
+            } else if (window.transformersReady) {
+                log('Waiting for legacy transformersReady promise...');
                 await window.transformersReady;
             }
+
+            // Verify pipeline is available
+            if (!window.pipeline) {
+                log('❌ window.pipeline not available after loading', 'error');
+                return;
+            }
+
+            log('✓ Transformers.js confirmed loaded, pipeline available');
 
             const success = await initializeDetector();
             if (success) {

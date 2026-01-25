@@ -272,30 +272,36 @@
 
     <!-- Transformers.js for browser-based AI model inference -->
     <script type="module">
-        // Import Transformers.js v3 (latest version with WebGPU support)
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
+        async function loadTransformers() {
+            try {
+                const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
 
-        // Configure for browser usage
-        env.allowLocalModels = false;
-        env.allowRemoteModels = true;
+                // Configure for browser usage
+                env.allowLocalModels = false;
+                env.allowRemoteModels = true;
 
-        // Create a promise that resolves when Transformers.js is ready
-        window.transformersReady = Promise.resolve({
-            pipeline: pipeline,
-            env: env
-        });
+                // Make globally available in multiple ways for maximum compatibility
+                window.pipeline = pipeline;
+                window.transformersEnv = env;
+                window.transformersReady = Promise.resolve({ pipeline, env });
 
-        // Also set directly for backwards compatibility
-        window.pipeline = pipeline;
-        window.transformersEnv = env;
+                console.log('✓ Transformers.js loaded and ready');
+                console.log('Pipeline function available:', typeof pipeline);
 
-        console.log('✓ Transformers.js loaded and ready');
-        console.log('Pipeline function available:', typeof pipeline);
+                // Dispatch event to signal readiness
+                window.dispatchEvent(new CustomEvent('transformers-ready', {
+                    detail: { pipeline, env }
+                }));
 
-        // Dispatch event to signal readiness
-        window.dispatchEvent(new CustomEvent('transformers-ready', {
-            detail: { pipeline, env }
-        }));
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to load Transformers.js:', error);
+                return false;
+            }
+        }
+
+        // Start loading immediately and expose promise
+        window.transformersLoadingPromise = loadTransformers();
     </script>
 
     <script src="detector.js?v=1769147554"></script>

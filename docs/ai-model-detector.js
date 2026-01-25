@@ -90,43 +90,46 @@ class AIModelDetector {
                 const config = this.modelConfigs[modelKey];
                 this.addDebugLog(`🔄 Loading ${modelKey} (${config.name})...`);
 
-                // Wait for Transformers.js to be ready
-                let pipeline = window.pipeline;
+                // Wait for Transformers.js to be ready - check multiple sources
+                let pipeline = null;
 
+                // Method 1: Check if pipeline is already available
+                if (window.pipeline) {
+                    this.addDebugLog('✓ Found window.pipeline directly');
+                    pipeline = window.pipeline;
+                }
+
+                // Method 2: Try the promise if available
                 if (!pipeline && window.transformersReady) {
                     this.addDebugLog('⏳ Waiting for Transformers.js promise...');
                     try {
-                        const transformers = await window.transformersReady;
+                        const transformers = await Promise.race([
+                            window.transformersReady,
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('Promise timeout')), 5000))
+                        ]);
                         pipeline = transformers.pipeline;
                         this.addDebugLog('✓ Transformers.js promise resolved');
                     } catch (e) {
-                        this.addDebugLog(`❌ Transformers.js promise failed: ${e.message}`);
+                        this.addDebugLog(`⚠️ Promise failed: ${e.message}, trying alternative methods...`);
                     }
                 }
 
-                // If still not available, try waiting for event
+                // Method 3: Import directly as fallback
                 if (!pipeline) {
-                    this.addDebugLog('⏳ Waiting for transformers-ready event...');
-                    pipeline = await new Promise((resolve, reject) => {
-                        const timeout = setTimeout(() => {
-                            reject(new Error('Timeout waiting for Transformers.js'));
-                        }, 15000);
-
-                        window.addEventListener('transformers-ready', (e) => {
-                            clearTimeout(timeout);
-                            this.addDebugLog('✓ Received transformers-ready event');
-                            resolve(e.detail.pipeline);
-                        }, { once: true });
-
-                        if (window.pipeline) {
-                            clearTimeout(timeout);
-                            resolve(window.pipeline);
-                        }
-                    });
+                    this.addDebugLog('⏳ Attempting direct import of Transformers.js...');
+                    try {
+                        const { pipeline: importedPipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
+                        pipeline = importedPipeline;
+                        window.pipeline = pipeline; // Cache it for next time
+                        this.addDebugLog('✓ Direct import successful');
+                    } catch (e) {
+                        this.addDebugLog(`❌ Direct import failed: ${e.message}`);
+                    }
                 }
 
                 if (!pipeline) {
-                    this.addDebugLog(`❌ Pipeline not available for ${modelKey}`);
+                    this.addDebugLog(`❌ Pipeline not available for ${modelKey} after all attempts`);
+                    this.addDebugLog(`Debug: window.pipeline=${typeof window.pipeline}, window.transformersReady=${typeof window.transformersReady}`);
                     return false;
                 }
 
