@@ -162,18 +162,54 @@ class AIModelDetector {
 
             this.addDebugLog('✓ Model ready, preparing input...');
 
-            // Determine best input format
+            // Transformers.js image-classification pipeline accepts:
+            // - String URL (http:// or blob:)
+            // - HTMLImageElement
+            // - HTMLCanvasElement
+            // - NOT raw File/Blob objects!
+
             let input = null;
             let inputType = 'unknown';
 
-            // Priority: File > src URL > HTMLImageElement
+            // If we have a File object, convert it to an HTMLImageElement
             if (file && file instanceof Blob) {
-                input = file;
-                inputType = `File (${file.type})`;
-            } else if (imageElement && imageElement.src && typeof imageElement.src === 'string') {
+                this.addDebugLog('🔄 Converting File to HTMLImageElement...');
+                try {
+                    // Create object URL from file
+                    const blobUrl = URL.createObjectURL(file);
+                    this.addDebugLog(`✓ Created blob URL: ${blobUrl.substring(0, 50)}...`);
+
+                    // Load it into an image element
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = () => {
+                            this.addDebugLog('✓ Image loaded into HTMLImageElement');
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            reject(new Error('Failed to load image from file'));
+                        };
+                        img.src = blobUrl;
+                    });
+
+                    input = img;
+                    inputType = `HTMLImageElement (from File: ${file.type})`;
+
+                    // Clean up blob URL after a delay (model needs it during inference)
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+                } catch (error) {
+                    this.addDebugLog(`⚠️ File conversion failed: ${error.message}`);
+                    throw new Error(`Failed to convert file to image: ${error.message}`);
+                }
+            }
+            // If we have an image element with src
+            else if (imageElement && imageElement.src && typeof imageElement.src === 'string') {
                 input = imageElement.src;
                 inputType = 'Image URL';
-            } else if (imageElement instanceof HTMLImageElement) {
+            }
+            // If we have an HTMLImageElement
+            else if (imageElement instanceof HTMLImageElement) {
                 input = imageElement;
                 inputType = 'HTMLImageElement';
             }
