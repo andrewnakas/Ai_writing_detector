@@ -192,11 +192,16 @@ class AIModelDetector {
                         img.src = blobUrl;
                     });
 
-                    input = img;
-                    inputType = `HTMLImageElement (from File: ${file.type})`;
+                    // Use the blob URL string directly instead of HTMLImageElement
+                    // Transformers.js prefers URL strings
+                    input = blobUrl;
+                    inputType = `Blob URL string (from File: ${file.type})`;
 
-                    // Clean up blob URL after a delay (model needs it during inference)
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                    this.addDebugLog(`✓ Will use blob URL: ${blobUrl}`);
+
+                    // Keep blob URL alive during inference (don't revoke yet)
+                    // Store reference to clean up later
+                    this._activeBlobUrl = blobUrl;
 
                 } catch (error) {
                     this.addDebugLog(`⚠️ File conversion failed: ${error.message}`);
@@ -222,7 +227,18 @@ class AIModelDetector {
 
             // Run inference
             this.addDebugLog('🚀 Running inference...');
+            this.addDebugLog(`   Input value type: ${typeof input}`);
+            this.addDebugLog(`   Input constructor: ${input.constructor?.name || 'unknown'}`);
+
             const predictions = await this.model(input, { topk: 5 });
+
+            // Clean up blob URL if we created one
+            if (this._activeBlobUrl) {
+                setTimeout(() => {
+                    URL.revokeObjectURL(this._activeBlobUrl);
+                    this._activeBlobUrl = null;
+                }, 1000);
+            }
 
             this.addDebugLog(`✓ Got ${predictions.length} predictions`);
             this.addDebugLog(`📊 Top: ${predictions[0].label} (${(predictions[0].score * 100).toFixed(1)}%)`);
