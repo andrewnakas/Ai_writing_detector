@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Diagnostics</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 { color: #4CAF50; }
+        .test {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #666;
+            background: #2d2d2d;
+        }
+        .test.pass { border-left-color: #4CAF50; }
+        .test.fail { border-left-color: #f44336; }
+        .test.warn { border-left-color: #FFC107; }
+        code {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ce9178;
+        }
+        pre {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #30363d;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #45a049; }
+        .status { font-weight: bold; }
+        .pass-status { color: #4CAF50; }
+        .fail-status { color: #f44336; }
+        .warn-status { color: #FFC107; }
+    </style>
+</head>
+<body>
+    <h1>🔬 AI Model System Diagnostics</h1>
+    <p>This page tests all components needed for AI model inference.</p>
+
+    <button onclick="runDiagnostics()">▶️ Run Diagnostics</button>
+    <button onclick="location.reload()">🔄 Reload Page</button>
+
+    <div id="results"></div>
+
+    <!-- Load Transformers.js -->
+    <script type="module">
+        async function loadTransformers() {
+            try {
+                const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
+                env.allowLocalModels = false;
+                env.allowRemoteModels = true;
+                window.pipeline = pipeline;
+                window.transformersEnv = env;
+                window.transformersReady = Promise.resolve({ pipeline, env });
+                console.log('✅ Transformers.js loaded');
+                return true;
+            } catch (error) {
+                console.error('❌ Transformers.js load failed:', error);
+                window.transformersLoadError = error;
+                return false;
+            }
+        }
+        window.transformersLoadingPromise = loadTransformers();
+    </script>
+
+    <script src="ai-model-detector.js"></script>
+
+    <script>
+        async function runDiagnostics() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Running diagnostics...</h2>';
+
+            const tests = [];
+
+            // Test 1: Browser ES6 Modules Support
+            tests.push({
+                name: 'ES6 Module Support',
+                test: () => typeof import === 'function',
+                details: 'Browser must support dynamic imports'
+            });
+
+            // Test 2: Transformers.js Loading Promise
+            tests.push({
+                name: 'Transformers.js Loading Promise',
+                test: () => typeof window.transformersLoadingPromise !== 'undefined',
+                details: 'transformersLoadingPromise: ' + typeof window.transformersLoadingPromise
+            });
+
+            // Test 3: Wait for Transformers.js
+            let transformersLoaded = false;
+            if (window.transformersLoadingPromise) {
+                transformersLoaded = await window.transformersLoadingPromise;
+            }
+            tests.push({
+                name: 'Transformers.js Loaded',
+                test: () => transformersLoaded,
+                details: window.transformersLoadError ? 'Error: ' + window.transformersLoadError.message : 'Success'
+            });
+
+            // Test 4: window.pipeline Available
+            tests.push({
+                name: 'window.pipeline Available',
+                test: () => typeof window.pipeline !== 'undefined',
+                details: 'Type: ' + typeof window.pipeline
+            });
+
+            // Test 5: window.pipeline is Function
+            tests.push({
+                name: 'window.pipeline is Function',
+                test: () => typeof window.pipeline === 'function',
+                details: window.pipeline ? 'Function found' : 'Not a function'
+            });
+
+            // Test 6: AIModelDetector Class Available
+            tests.push({
+                name: 'AIModelDetector Class Loaded',
+                test: () => typeof AIModelDetector !== 'undefined',
+                details: 'Type: ' + typeof AIModelDetector
+            });
+
+            // Test 7: Create AIModelDetector Instance
+            let detector = null;
+            let detectorError = null;
+            try {
+                if (typeof AIModelDetector !== 'undefined') {
+                    detector = new AIModelDetector();
+                }
+            } catch (error) {
+                detectorError = error;
+            }
+            tests.push({
+                name: 'AIModelDetector Instance Creation',
+                test: () => detector !== null,
+                details: detectorError ? 'Error: ' + detectorError.message : 'Instance created'
+            });
+
+            // Test 8: Detector Version
+            tests.push({
+                name: 'AI Model Version',
+                test: () => typeof window.AI_MODEL_VERSION !== 'undefined',
+                details: window.AI_MODEL_VERSION || 'Not set',
+                warn: true
+            });
+
+            // Test 9: Model Configs
+            if (detector) {
+                const enabledModels = Object.entries(detector.modelConfigs)
+                    .filter(([k, v]) => v.enabled)
+                    .map(([k, v]) => k);
+                tests.push({
+                    name: 'Enabled Models',
+                    test: () => enabledModels.length > 0,
+                    details: enabledModels.join(', ') || 'None'
+                });
+            }
+
+            // Test 10: Browser Cache API
+            tests.push({
+                name: 'Cache API Available',
+                test: () => 'caches' in window,
+                details: 'Required for model caching',
+                warn: true
+            });
+
+            // Test 11: IndexedDB Available
+            tests.push({
+                name: 'IndexedDB Available',
+                test: () => 'indexedDB' in window,
+                details: 'Used for Transformers.js storage',
+                warn: true
+            });
+
+            // Display results
+            let html = '<h2>📊 Diagnostic Results</h2>';
+            let passCount = 0;
+            let failCount = 0;
+            let warnCount = 0;
+
+            tests.forEach((test, i) => {
+                const passed = test.test();
+                const className = !passed && !test.warn ? 'fail' : passed ? 'pass' : 'warn';
+                const statusClass = !passed && !test.warn ? 'fail-status' : passed ? 'pass-status' : 'warn-status';
+                const icon = !passed && !test.warn ? '❌' : passed ? '✅' : '⚠️';
+
+                if (!passed && !test.warn) failCount++;
+                else if (passed) passCount++;
+                else warnCount++;
+
+                html += `
+                    <div class="test ${className}">
+                        <strong>${i + 1}. ${test.name}</strong>
+                        <span class="status ${statusClass}">${icon} ${passed ? 'PASS' : test.warn ? 'WARN' : 'FAIL'}</span>
+                        <br><small>${test.details}</small>
+                    </div>
+                `;
+            });
+
+            // Summary
+            html = `
+                <div style="background: #2d2d2d; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <h3>Summary</h3>
+                    <p>
+                        <span class="pass-status">✅ Passed: ${passCount}</span> |
+                        <span class="fail-status">❌ Failed: ${failCount}</span> |
+                        <span class="warn-status">⚠️ Warnings: ${warnCount}</span>
+                    </p>
+                    ${failCount === 0 ? '<p style="color: #4CAF50;">🎉 All critical tests passed! The system should work.</p>' : '<p style="color: #f44336;">⚠️ Critical failures detected. See details below.</p>'}
+                </div>
+            ` + html;
+
+            // Environment Info
+            html += `
+                <h2>🖥️ Environment Information</h2>
+                <pre>${JSON.stringify({
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    cookiesEnabled: navigator.cookieEnabled,
+                    onLine: navigator.onLine,
+                    windowKeys: Object.keys(window).filter(k => k.toLowerCase().includes('transform')),
+                }, null, 2)}</pre>
+            `;
+
+            // Global Variables
+            html += `
+                <h2>🔍 Global Variables</h2>
+                <pre>${JSON.stringify({
+                    'typeof window.pipeline': typeof window.pipeline,
+                    'typeof window.transformersEnv': typeof window.transformersEnv,
+                    'typeof window.transformersReady': typeof window.transformersReady,
+                    'typeof AIModelDetector': typeof AIModelDetector,
+                    'window.AI_MODEL_VERSION': window.AI_MODEL_VERSION,
+                }, null, 2)}</pre>
+            `;
+
+            if (detector) {
+                html += `
+                    <h2>🤖 Detector Debug Logs</h2>
+                    <pre>${detector.getDebugLogs() || 'No logs available'}</pre>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(() => runDiagnostics(), 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Detection Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .results {
+            grid-column: 1 / -1;
+        }
+
+        .score-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .score-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .score-card h3 {
+            color: #495057;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .score-label {
+            font-size: 1.1em;
+            color: #6c757d;
+        }
+
+        .confidence {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .confidence.high { background: #d4edda; color: #155724; }
+        .confidence.medium-high { background: #fff3cd; color: #856404; }
+        .confidence.medium { background: #fff3cd; color: #856404; }
+        .confidence.low { background: #f8d7da; color: #721c24; }
+
+        .detections-list {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .detection-item {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .detection-item h4 {
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .detection-item .severity {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .severity.high { background: #f8d7da; color: #721c24; }
+        .severity.medium { background: #fff3cd; color: #856404; }
+        .severity.low { background: #d1ecf1; color: #0c5460; }
+
+        .matches {
+            margin-top: 10px;
+        }
+
+        .match-example {
+            background: #fff;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: 'Georgia', serif;
+            border-left: 3px solid #667eea;
+            font-style: italic;
+        }
+
+        .sample-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .sample-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 15px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .sample-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .debug-section {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .debug-section pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .method-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .method-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .method-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .method-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 AI Text Detection Test Lab</h1>
+            <p>Test Wikipedia-based pattern detection and compression analysis on any text</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Input Panel -->
+            <div class="panel">
+                <h2>📝 Input Text</h2>
+                <div class="sample-buttons">
+                    <button class="sample-btn" onclick="loadSample('ai1')">🤖 AI Sample #1<br><small>Marketing Copy</small></button>
+                    <button class="sample-btn" onclick="loadSample('ai2')">🤖 AI Sample #2<br><small>Academic Style</small></button>
+                    <button class="sample-btn" onclick="loadSample('human1')">👤 Human Sample #1<br><small>Natural Writing</small></button>
+                    <button class="sample-btn" onclick="loadSample('human2')">👤 Human Sample #2<br><small>News Article</small></button>
+                </div>
+                <textarea id="textInput" placeholder="Paste or type text here to analyze for AI-generated content patterns..."></textarea>
+                <div class="button-group">
+                    <button onclick="analyzeText()">🔬 Analyze Text</button>
+                    <button class="secondary" onclick="clearAll()">🗑️ Clear All</button>
+                    <button class="secondary" onclick="exportResults()">📥 Export Results</button>
+                </div>
+                <div class="stats" id="inputStats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="charCount">0</div>
+                        <div class="stat-label">Characters</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="wordCount">0</div>
+                        <div class="stat-label">Words</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="sentenceCount">0</div>
+                        <div class="stat-label">Sentences</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Panel -->
+            <div class="panel">
+                <h2>📊 Analysis Status</h2>
+                <div id="statusPanel">
+                    <p style="text-align: center; color: #6c757d; padding: 40px;">
+                        Enter text and click "Analyze Text" to see results
+                    </p>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel results hidden" id="resultsPanel">
+                <h2>🎯 Detection Results</h2>
+
+                <div class="score-display">
+                    <div class="score-card">
+                        <h3>Overall Score</h3>
+                        <div class="score-value" id="overallScore">--</div>
+                        <div class="score-label">AI Likelihood</div>
+                        <span class="confidence" id="overallConfidence">--</span>
+                    </div>
+                    <div class="score-card">
+                        <h3>Pattern Detection</h3>
+                        <div class="score-value" id="patternScore">--</div>
+                        <div class="score-label">Wikipedia Patterns</div>
+                        <span class="confidence" id="patternConfidence">--</span>
+                    </div>
+                    <div class="score-card">
+                        <h3>Compression Analysis</h3>
+                        <div class="score-value" id="compressionScore">--</div>
+                        <div class="score-label">ZipPy Method</div>
+                        <span class="confidence" id="compressionConfidence">--</span>
+                    </div>
+                </div>
+
+                <div class="method-comparison">
+                    <div class="method-card">
+                        <h3>📋 Pattern-Based Detection</h3>
+                        <div id="patternDetails"></div>
+                    </div>
+                    <div class="method-card">
+                        <h3>🗜️ Compression-Based Detection</h3>
+                        <div id="compressionDetails"></div>
+                    </div>
+                </div>
+
+                <div class="detections-list" id="detectionsList">
+                    <h3>🔍 Detected Patterns</h3>
+                    <div id="detectionsContent"></div>
+                </div>
+
+                <details>
+                    <summary style="cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-top: 20px;"><strong>🐛 Debug Information</strong></summary>
+                    <div class="debug-section" id="debugInfo"></div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load detection scripts -->
+    <script src="detector.js"></script>
+    <script src="compression-detector.js"></script>
+
+    <script>
+        let detector = null;
+        let compressionDetector = null;
+        let currentResults = null;
+
+        // Sample texts
+        const samples = {
+            ai1: `Moreover, it's important to note that this innovative solution serves as a testament to the breathtaking possibilities of modern technology. Furthermore, experts say the stunning results are truly remarkable. The cutting-edge approach not only revolutionizes the industry, but also transforms the way we think about innovation. This groundbreaking development offers numerous benefits, including enhanced efficiency, unprecedented accuracy, and remarkable scalability.`,
+
+            ai2: `The multifaceted nature of this phenomenon can be observed through three distinct lenses: economic, social, and environmental. Not merely a passing trend, but rather a fundamental shift in our collective understanding. The implications are far-reaching and profound, touching upon every aspect of modern society. It is worth noting that scholars have identified several key factors contributing to this paradigm shift.`,
+
+            human1: `I went to the store yesterday and bought some groceries. The checkout line was really long, probably because it was a Saturday afternoon. I ran into my neighbor there and we chatted for a bit about the weather. It's been pretty cold lately. Anyway, I got home and realized I forgot to buy milk, so I had to go back out again.`,
+
+            human2: `The city council voted 7-2 last night to approve the new parking regulations. Mayor Johnson said the changes will take effect next month. Some residents expressed concerns about the impact on downtown businesses, but supporters argue it will reduce traffic congestion. The regulations include a 2-hour parking limit on Main Street and new permit requirements for overnight parking.`
+        };
+
+        // Initialize detectors
+        async function initializeDetectors() {
+            try {
+                detector = new AIWritingDetector();
+                await detector.initialize();
+                compressionDetector = new CompressionDetector();
+                updateStatus('✅ Detectors initialized and ready', 'success');
+            } catch (error) {
+                updateStatus('❌ Error initializing detectors: ' + error.message, 'error');
+                console.error('Initialization error:', error);
+            }
+        }
+
+        // Update input stats
+        function updateInputStats() {
+            const text = document.getElementById('textInput').value;
+            const chars = text.length;
+            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const sentences = text.trim() ? text.split(/[.!?]+/).filter(s => s.trim().length > 0).length : 0;
+
+            document.getElementById('charCount').textContent = chars.toLocaleString();
+            document.getElementById('wordCount').textContent = words.toLocaleString();
+            document.getElementById('sentenceCount').textContent = sentences;
+        }
+
+        // Load sample text
+        function loadSample(sampleKey) {
+            document.getElementById('textInput').value = samples[sampleKey];
+            updateInputStats();
+        }
+
+        // Update status panel
+        function updateStatus(message, type = 'info') {
+            const panel = document.getElementById('statusPanel');
+            const colors = {
+                success: '#d4edda',
+                error: '#f8d7da',
+                info: '#d1ecf1',
+                warning: '#fff3cd'
+            };
+            panel.innerHTML = `
+                <p style="padding: 20px; background: ${colors[type] || colors.info}; border-radius: 5px; text-align: center;">
+                    ${message}
+                </p>
+            `;
+        }
+
+        // Analyze text
+        async function analyzeText() {
+            const text = document.getElementById('textInput').value.trim();
+
+            if (!text) {
+                alert('Please enter some text to analyze');
+                return;
+            }
+
+            if (!detector || !compressionDetector) {
+                updateStatus('⏳ Initializing detectors...', 'warning');
+                await initializeDetectors();
+            }
+
+            updateStatus('🔬 Analyzing text...', 'info');
+            document.getElementById('resultsPanel').classList.add('hidden');
+
+            try {
+                // Run both detection methods
+                const patternResults = detector.analyzeText(text);
+                const compressionResults = await compressionDetector.analyze(text);
+
+                // Validate results
+                if (!patternResults || !compressionResults) {
+                    throw new Error('Detection methods returned invalid results');
+                }
+
+                if (typeof patternResults.overallScore !== 'number' || typeof compressionResults.score !== 'number') {
+                    throw new Error('Invalid scores returned: ' + JSON.stringify({
+                        pattern: patternResults.overallScore,
+                        compression: compressionResults.score
+                    }));
+                }
+
+                // Combine results (70% pattern, 30% compression)
+                const overallScore = Math.round(
+                    patternResults.overallScore * 0.7 + compressionResults.score * 0.3
+                );
+
+                currentResults = {
+                    overall: overallScore,
+                    pattern: patternResults,
+                    compression: compressionResults,
+                    text: text
+                };
+
+                displayResults(currentResults);
+                updateStatus('✅ Analysis complete!', 'success');
+
+            } catch (error) {
+                updateStatus('❌ Analysis failed: ' + error.message, 'error');
+                console.error('Analysis error:', error);
+                console.error('Error stack:', error.stack);
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            try {
+                // Validate results structure
+                if (!results || !results.pattern || !results.compression) {
+                    throw new Error('Invalid results structure');
+                }
+
+                // Show results panel
+                document.getElementById('resultsPanel').classList.remove('hidden');
+
+            // Overall score
+            document.getElementById('overallScore').textContent = results.overall;
+            document.getElementById('overallConfidence').textContent = results.pattern.confidence;
+            document.getElementById('overallConfidence').className = 'confidence ' + results.pattern.confidence.replace('_', '-');
+
+            // Pattern score
+            document.getElementById('patternScore').textContent = results.pattern.overallScore;
+            document.getElementById('patternConfidence').textContent = results.pattern.confidence;
+            document.getElementById('patternConfidence').className = 'confidence ' + results.pattern.confidence.replace('_', '-');
+
+            // Compression score
+            document.getElementById('compressionScore').textContent = results.compression.score;
+            document.getElementById('compressionConfidence').textContent = results.compression.confidence;
+            document.getElementById('compressionConfidence').className = 'confidence ' + results.compression.confidence;
+
+            // Pattern details
+            const patternHTML = `
+                <p><strong>Signs Detected:</strong> ${results.pattern.detections.length}</p>
+                <p><strong>Categories:</strong> ${Object.keys(results.pattern.categoryScores).length}</p>
+                <p><strong>Total Matches:</strong> ${results.pattern.detections.reduce((sum, d) => sum + d.matches.length, 0)}</p>
+            `;
+            document.getElementById('patternDetails').innerHTML = patternHTML;
+
+            // Compression details
+            const compressionHTML = `
+                <p><strong>Text Alone Ratio:</strong> ${results.compression.metrics.textAloneRatio}</p>
+                <p><strong>With AI Corpus:</strong> ${results.compression.metrics.withAICorpusRatio}</p>
+                <p><strong>Difference:</strong> ${results.compression.metrics.difference}</p>
+                <p style="font-size: 0.9em; color: #6c757d; margin-top: 10px;">${results.compression.explanation}</p>
+            `;
+            document.getElementById('compressionDetails').innerHTML = compressionHTML;
+
+            // Detections list
+            let detectionsHTML = '';
+            if (results.pattern.detections.length === 0) {
+                detectionsHTML = '<p style="text-align: center; color: #6c757d;">No AI writing patterns detected</p>';
+            } else {
+                results.pattern.detections.forEach(detection => {
+                    detectionsHTML += `
+                        <div class="detection-item">
+                            <h4>
+                                ${detection.signName}
+                                <span class="severity ${detection.severity}">${detection.severity.toUpperCase()}</span>
+                            </h4>
+                            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 10px;">
+                                Category: ${detection.category} | Matches: ${detection.matches.length}
+                            </p>
+                            <div class="matches">
+                                ${detection.matches.slice(0, 3).map(match => `
+                                    <div class="match-example">"${match.value}"</div>
+                                `).join('')}
+                                ${detection.matches.length > 3 ? `<p style="color: #6c757d; font-size: 0.85em; margin-top: 5px;">+ ${detection.matches.length - 3} more matches</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('detectionsContent').innerHTML = detectionsHTML;
+
+            // Debug info
+            document.getElementById('debugInfo').innerHTML = `<pre>${JSON.stringify({
+                pattern: results.pattern,
+                compression: results.compression,
+                textLength: results.text.length,
+                wordCount: results.text.split(/\s+/).length
+            }, null, 2)}</pre>`;
+
+            // Scroll to results
+            document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error('Error displaying results:', error);
+                updateStatus('❌ Error displaying results: ' + error.message, 'error');
+                document.getElementById('resultsPanel').classList.add('hidden');
+            }
+        }
+
+        // Clear all
+        function clearAll() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('resultsPanel').classList.add('hidden');
+            updateInputStats();
+            updateStatus('✅ Cleared. Enter new text to analyze.', 'info');
+            currentResults = null;
+        }
+
+        // Export results
+        function exportResults() {
+            if (!currentResults) {
+                alert('No results to export. Analyze some text first!');
+                return;
+            }
+
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                text: currentResults.text.substring(0, 500) + (currentResults.text.length > 500 ? '...' : ''),
+                scores: {
+                    overall: currentResults.overall,
+                    pattern: currentResults.pattern.overallScore,
+                    compression: currentResults.compression.score
+                },
+                confidence: currentResults.pattern.confidence,
+                detections: currentResults.pattern.detections.map(d => ({
+                    sign: d.signName,
+                    severity: d.severity,
+                    matches: d.matches.length
+                })),
+                analysis: currentResults
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ai-text-analysis-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Event listeners
+        document.getElementById('textInput').addEventListener('input', updateInputStats);
+
+        // Initialize on load
+        window.addEventListener('load', async () => {
+            updateStatus('⏳ Loading detectors...', 'info');
+            await initializeDetectors();
+        });
+    </script>
+</body>
+</html>
