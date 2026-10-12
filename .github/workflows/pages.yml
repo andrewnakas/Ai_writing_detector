@@ -1,32 +1,23 @@
-name: Update Wikipedia AI Writing Signs
+name: Deploy redirect pages
 
+# This project moved to https://gpttrace.com. docs/ only holds redirect pages.
 on:
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
-  workflow_dispatch: # Allow manual trigger
   push:
     branches:
       - main
-      - 'claude/**'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 jobs:
   deploy-pages:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
